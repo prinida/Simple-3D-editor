@@ -1,0 +1,10 @@
+^D:\ПРОГРАММИРОВАНИЕ\ГРАФИКА ПРОЕКТЫ\4.1_PLAIN_CUBE\EXTERNAL\GLAD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SD:/Программирование/Графика проекты/4.1_Plain_Cube" "-BD:/Программирование/Графика проекты/4.1_Plain_Cube" --check-stamp-file "D:/Программирование/Графика проекты/4.1_Plain_Cube/external/glad/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

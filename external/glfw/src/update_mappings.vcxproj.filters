@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Программирование\Графика проекты\4.1_Plain_Cube\CMakeFiles\73b36f0a9c82b5dd7f7f15dcd5108e1c\update_mappings.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Программирование\Графика проекты\4.1_Plain_Cube\external\glfw\src\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Программирование\Графика проекты\4.1_Plain_Cube\external\glfw\src\mappings.h.in">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="D:\Программирование\Графика проекты\4.1_Plain_Cube\external\glfw\CMake\GenerateMappings.cmake" />
+    <None Include="D:\Программирование\Графика проекты\4.1_Plain_Cube\external\glfw\src\CMakeFiles\update_mappings" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{92AC7E31-A562-3275-8C86-D294AAA7B926}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{E91C647A-C05E-31AF-96BE-61E3D44FB898}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
