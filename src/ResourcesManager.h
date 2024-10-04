@@ -20,22 +20,24 @@ public:
     ResourceManager& operator=(ResourceManager&&) = delete;
     ResourceManager(ResourceManager&&) = delete;
 
-    std::shared_ptr<ShaderProgram> LoadShaders(std::string_view shaderName, std::string_view vertexPath, std::string_view fragmentPath);
-    std::shared_ptr<ShaderProgram> GetShaderProgram(std::string_view shaderName);
+    std::shared_ptr<ShaderProgram> loadShaders(std::string_view shaderName, std::string_view vertexPath, std::string_view fragmentPath);
+    std::shared_ptr<ShaderProgram> getShaderProgram(std::string_view shaderName);
 
-    std::shared_ptr<Texture> LoadTexture(std::string_view textureName, std::string_view texturePath);
-    std::shared_ptr<Texture> GetTexture(std::string_view textureName);
+    std::shared_ptr<Texture> loadTexture(std::string_view textureName, std::string_view texturePath);
+    std::shared_ptr<Texture> getTexture(std::string_view textureName);
+
+    std::string getFullFilePath(std::string_view relativeFilePath) const;
 
 private:
-    std::string GetFileString(std::string_view relativeFilePath) const;
+    std::string getFileString(std::string_view relativeFilePath) const;
 
     typedef std::map<std::string, std::shared_ptr<ShaderProgram>> ShaderProgramsMap;
-    ShaderProgramsMap shaderPrograms;
+    ShaderProgramsMap m_shaderPrograms;
 
     typedef std::map<std::string, std::shared_ptr<Texture>> TexturesMap;
-    TexturesMap textures;
+    TexturesMap m_textures;
 
-    std::string path;
+    std::string m_path;
 };
 
 #endif

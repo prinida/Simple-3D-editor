@@ -49,8 +49,8 @@ public:
 private:
     bool createShader(std::string_view source, const GLenum shaderType, GLuint& shaderID) const;
 
-    bool isCompiled = false;
-    GLuint ID = 0;
+    bool m_isCompiled = false;
+    GLuint m_ID = 0;
 };
 
 #endif

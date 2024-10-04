@@ -4,8 +4,8 @@
 
 Texture::Texture(unsigned char* data, int width, int height)
 {
-    glGenTextures(1, &ID);
-    glBindTexture(GL_TEXTURE_2D, ID);
+    glGenTextures(1, &m_ID);
+    glBindTexture(GL_TEXTURE_2D, m_ID);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -16,7 +16,7 @@ Texture::Texture(unsigned char* data, int width, int height)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    if (IsExtensionSupported("GL_EXT_texture_filter_anisotropic"))
+    if (isExtensionSupported("GL_EXT_texture_filter_anisotropic"))
     {
         GLfloat anisoSetting = 0.0f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &anisoSetting);
@@ -26,10 +26,10 @@ Texture::Texture(unsigned char* data, int width, int height)
 
 GLuint Texture::getID() const
 {
-    return ID;
+    return m_ID;
 }
 
-GLboolean Texture::IsExtensionSupported(std::string_view name) const
+GLboolean Texture::isExtensionSupported(std::string_view name) const
 {
     GLint n = 0;
     const char* extension;

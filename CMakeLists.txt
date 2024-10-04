@@ -9,9 +9,17 @@ add_executable(${PROJECT_NAME}
 	src/ResourcesManager.h
 	src/ShaderProgram.h
 	src/Texture.h
+	src/OpenGLManager.h
+	src/GLFWManagement.h
+	src/ReplicatedCutObject.h
+	src/Camera.h
 	src/ResourcesManager.cpp
 	src/ShaderProgram.cpp
 	src/Texture.cpp
+	src/OpenGLManager.cpp
+	src/ReplicatedCutObject.cpp
+	src/Camera.cpp
+	src/GLFWManagement.cpp
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)

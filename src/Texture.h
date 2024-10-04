@@ -12,9 +12,9 @@ public:
     GLuint getID() const;
 
 private:
-    GLboolean IsExtensionSupported(std::string_view name) const;
+    GLboolean isExtensionSupported(std::string_view name) const;
 
-    GLuint ID = 0;
+    GLuint m_ID = 0;
 };
 
 #endif
