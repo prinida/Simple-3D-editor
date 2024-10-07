@@ -18,21 +18,34 @@ public:
     ~ReplicatedCutObject();
 
     void prepareToRenderTrajectory();
-    void renderTrajectory(const glm::mat4& viewMatrix);
+    void renderTrajectory(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color);
+
+    void prepareToRenderTrajectoryCuts();
+    void renderTrajectoryCuts(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color);
+
+    void prepareToRenderReplicatedCut();
+    void renderReplicatedCut(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color);
 
 private:
     void generateBuffers();
+    void calcVectorsOrientationInTrajectory();
 
-    ResourceManager* m_resourceManager;
+    ResourceManager* m_resourceManager = nullptr;
 
     std::vector<glm::vec2> m_cut;
     std::vector<glm::vec3> m_trajectory;
     std::vector<float> m_cutParameters;
+    std::vector<glm::vec3> m_translatedCut;
+    std::vector<glm::vec3> m_replicatedCut;
 
-    GLuint m_vao;
-    GLuint m_trajectoryBufferObject;
+    std::vector<bool> m_isChangeVectorOrientation;
 
-    std::shared_ptr<ShaderProgram> m_trajectoryShaderProgram;
+    GLuint m_vao{};
+    GLuint m_trajectoryBufferObject{};
+    GLuint m_trajectoryCutsBufferObject{};
+    GLuint m_replicatedCutBufferObject{};
+
+    std::shared_ptr<ShaderProgram> m_defaultShaderProgram = nullptr;
 };
 
 #endif

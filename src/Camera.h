@@ -15,7 +15,7 @@ namespace DefaultCamera
 {
     inline constexpr float yaw = -90.0f;
     inline constexpr float pitch = 0.0f;
-    inline constexpr float speed = 10.0f;
+    inline constexpr float speed = 1.0f;
     inline constexpr float sensitivity = 0.1f;
     inline constexpr float zoom = 45.0f;
 

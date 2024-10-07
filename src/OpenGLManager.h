@@ -10,10 +10,19 @@
 
 #include <string_view>
 
+namespace OpenGLConstants
+{
+    inline constexpr float fovy = 1.0472f;
+    inline constexpr float zNear = 0.1f;
+    inline constexpr float zFar = 300.0f;
+
+    inline constexpr glm::vec3 startCameraPosition(0.0f, 0.0f, 1.0f);
+}
+
 class OpenGLManager
 {
 public:
-    OpenGLManager(std::string_view executablePath);
+    OpenGLManager(std::string_view executablePath, int mainWindowWidth, int mainWindowHeight);
     ~OpenGLManager();
 
     void init(GLFWwindow* window);
@@ -29,9 +38,17 @@ public:
 private:
     ResourceManager* m_resourceManager = nullptr;
     ReplicatedCutObject* m_cutObject = nullptr;
-    Camera* camera = nullptr;
+    Camera* m_camera = nullptr;
 
-    glm::mat4 viewMatrix = glm::mat4(1.0f);
+    glm::mat4 m_projectionMatrix = glm::mat4(1.0f);
+    glm::mat4 m_viewMatrix = glm::mat4(1.0f);
+
+    glm::vec3 m_trajectoryColor{ 1.0f, 0.0f, 0.0f };
+    glm::vec3 m_cutsColor{ 0.0f, 0.0f, 1.0f };
+    glm::vec3 m_replicatedCutColor{ 0.0f, 1.0f, 0.0f };
+
+    int m_mainWindowWidth = 0;
+    int m_mainWindowHeight = 0;
 };
 
 #endif

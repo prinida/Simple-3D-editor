@@ -49,10 +49,11 @@ namespace GLFW
         glfwSetCursorPosCallback(GLFWglobals::mainWindow, processCursorPosition);
         glfwSetKeyCallback(GLFWglobals::mainWindow, processKeysClick);
         glfwSetScrollCallback(GLFWglobals::mainWindow, processScroll);
+        glfwSetMouseButtonCallback(GLFWglobals::mainWindow, processMouseClick);
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { std::exit(EXIT_FAILURE); }
 
-        GLFWglobals::openGLManager = new OpenGLManager(executablePath);
+        GLFWglobals::openGLManager = new OpenGLManager(executablePath, GLFWglobals::mainWindowWidth, GLFWglobals::mainWindowHeight);
         GLFWglobals::openGLManager->init(GLFWglobals::mainWindow);
     }
 
@@ -77,7 +78,7 @@ namespace GLFW
 
     void processCursorPosition(GLFWwindow* window, double xposIn, double yposIn)
     {
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
         {
             float xpos = static_cast<float>(xposIn);
             float ypos = static_cast<float>(yposIn);
@@ -122,6 +123,14 @@ namespace GLFW
     void processScroll(GLFWwindow* window, double xoffset, double yoffset)
     {
         GLFWglobals::openGLManager->mouseScroll(static_cast<float>(yoffset));
+    }
+
+    void processMouseClick(GLFWwindow* window, int button, int action, int mods)
+    {
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+        {
+            GLFWglobals::firstMousePositionChange = true;
+        }
     }
 
     void calcDeltaTimePerFrame()

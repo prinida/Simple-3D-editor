@@ -36,6 +36,7 @@ namespace GLFW
     void processCursorPosition(GLFWwindow* window, double xposIn, double yposIn);
     void processKeysClick(GLFWwindow* window, int key, int scancode, int action, int mods);
     void processScroll(GLFWwindow* window, double xoffset, double yoffset);
+    void processMouseClick(GLFWwindow* window, int button, int action, int mods);
     void calcDeltaTimePerFrame();
 }
 
