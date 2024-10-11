@@ -20,15 +20,15 @@ public:
     ~ReplicatedCutObject();
 
     void prepareToRenderTrajectory();
-    void renderTrajectory(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color);
+    void renderTrajectory(const glm::vec3& color);
 
     void prepareToRenderTrajectoryCuts();
-    void renderTrajectoryCuts(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color);
+    void renderTrajectoryCuts(const glm::vec3& color, bool isFrameMode);
 
     void prepareToRenderReplicatedCut();
-    void renderReplicatedCut(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color);
+    void renderReplicatedCut(const glm::vec3& color, bool isFrameMode, bool isLightEnabled);
 
-    void renderNormals(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color);
+    void renderNormals(const glm::vec3& color, bool isSmoothMode);
 
 private:
     void generateBuffers();

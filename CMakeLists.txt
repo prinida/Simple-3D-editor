@@ -4,7 +4,6 @@ set(PROJECT_NAME Simple-3D-editor)
 project(${PROJECT_NAME})
 
 add_executable(${PROJECT_NAME} 
-	src/main.cpp
 	src/stb_image.h
 	src/ResourcesManager.h
 	src/ShaderProgram.h
@@ -16,6 +15,9 @@ add_executable(${PROJECT_NAME}
 	src/LightTypes.h
 	src/MaterialTypes.h
 	src/LightManager.h
+	src/Enums.h
+
+	src/main.cpp
 	src/ResourcesManager.cpp
 	src/ShaderProgram.cpp
 	src/Texture.cpp
@@ -24,6 +26,23 @@ add_executable(${PROJECT_NAME}
 	src/Camera.cpp
 	src/GLFWManagement.cpp
 	src/LightManager.cpp
+	
+	src/ImGui/imconfig.h
+	src/ImGui/imgui.cpp
+	src/ImGui/imgui.h
+	src/ImGui/imgui_demo.cpp
+	src/ImGui/imgui_draw.cpp
+	src/ImGui/imgui_internal.h
+	src/ImGui/imgui_tables.cpp
+	src/ImGui/imgui_widgets.cpp
+	src/ImGui/imstb_rectpack.h
+	src/ImGui/imstb_textedit.h
+	src/ImGui/imstb_truetype.h
+	src/ImGui/imgui_impl_glfw.h
+	src/ImGui/imgui_impl_glfw.cpp
+	src/ImGui/imgui_impl_opengl3.h
+	src/ImGui/imgui_impl_opengl3.cpp
+	src/ImGui/imgui_impl_opengl3_loader.h
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)

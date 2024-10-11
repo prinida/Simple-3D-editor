@@ -79,14 +79,11 @@ void ReplicatedCutObject::prepareToRenderTrajectory()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void ReplicatedCutObject::renderTrajectory(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color)
+void ReplicatedCutObject::renderTrajectory(const glm::vec3& color)
 {
     glEnable(GL_LINE_SMOOTH);
 
     m_defaultShaderProgram->use();
-
-    m_defaultShaderProgram->setMat4("projection_matrix", projectionMatrix);
-    m_defaultShaderProgram->setMat4("view_matrix", viewMatrix);
     m_defaultShaderProgram->setVec3("color", color);
 
     glBindVertexArray(m_vao);
@@ -222,12 +219,9 @@ void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void ReplicatedCutObject::renderTrajectoryCuts(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color)
+void ReplicatedCutObject::renderTrajectoryCuts(const glm::vec3& color, bool isFrameMode)
 {
     m_defaultShaderProgram->use();
-
-    m_defaultShaderProgram->setMat4("projection_matrix", projectionMatrix);
-    m_defaultShaderProgram->setMat4("view_matrix", viewMatrix);
     m_defaultShaderProgram->setVec3("color", color);
 
     glBindVertexArray(m_vao);
@@ -236,8 +230,11 @@ void ReplicatedCutObject::renderTrajectoryCuts(const glm::mat4& projectionMatrix
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
-    glEnable(GL_POLYGON_MODE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if (isFrameMode)
+    {
+        glEnable(GL_POLYGON_MODE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
 
     int cutSize = m_cut.size();
     for (int i = 0; i < m_trajectory.size(); ++i)
@@ -247,8 +244,11 @@ void ReplicatedCutObject::renderTrajectoryCuts(const glm::mat4& projectionMatrix
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glDisable(GL_POLYGON_MODE);
+    if (isFrameMode)
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDisable(GL_POLYGON_MODE);
+    }
 }
 
 void ReplicatedCutObject::prepareToRenderReplicatedCut()
@@ -257,8 +257,8 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
     int pointsInCutNum = cutSize + 2;
     int cutNum = m_trajectory.size();
 
-    int replicatedCutSize = (cutNum - 1) * cutSize * 2 * 3 + cutSize * 3;
-    int normalsSize = (cutNum - 1) * cutSize * 2;
+    int replicatedCutSize = (cutNum - 1) * cutSize * 2 * 3 + cutSize * 3 * 2;
+    int normalsSize = (cutNum - 1) * cutSize * 2 + 4;
 
     m_replicatedCut.resize(replicatedCutSize);
     m_replicatedCutNormals.resize(replicatedCutSize);
@@ -266,7 +266,7 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
 
     int repCutIndex = 0;
     int normalsIndex = 0;
-    
+
     for (int i = 0; i < cutNum - 1; ++i)
     {
         for (int j = 1; j < pointsInCutNum - 1; ++j)
@@ -309,6 +309,45 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
         }
     }
 
+    glm::vec3 center = m_translatedCut[0];
+    glm::vec3 normal = m_trajectory[0] - m_trajectory[1];
+
+    for (int i = 1; i < cutSize + 1; ++i)
+    {
+        m_replicatedCut[repCutIndex] = center;
+        m_replicatedCut[repCutIndex + 1] = m_translatedCut[i];
+        m_replicatedCut[repCutIndex + 2] = m_translatedCut[i + 1];
+
+        m_replicatedCutNormals[repCutIndex] = normal;
+        m_replicatedCutNormals[repCutIndex + 1] = normal;
+        m_replicatedCutNormals[repCutIndex + 2] = normal;
+
+        repCutIndex += 3;
+    }
+
+    m_normals[normalsIndex] = m_trajectory[0];
+    m_normals[normalsIndex + 1] = m_trajectory[0] + 0.1f * glm::normalize(normal);
+    normalsIndex += 2;
+
+    center = m_translatedCut[m_translatedCut.size() - cutSize - 2];
+    normal = m_trajectory[m_trajectory.size() - 1] - m_trajectory[m_trajectory.size() - 2];
+
+    for (int i = 1; i < cutSize + 1; ++i)
+    {
+        m_replicatedCut[repCutIndex] = center;
+        m_replicatedCut[repCutIndex + 1] = m_translatedCut[m_translatedCut.size() - i];
+        m_replicatedCut[repCutIndex + 2] = m_translatedCut[m_translatedCut.size() - i - 1];
+
+        m_replicatedCutNormals[repCutIndex] = normal;
+        m_replicatedCutNormals[repCutIndex + 1] = normal;
+        m_replicatedCutNormals[repCutIndex + 2] = normal;
+
+        repCutIndex += 3;
+    }
+
+    m_normals[normalsIndex] = m_trajectory[m_trajectory.size() - 1];
+    m_normals[normalsIndex + 1] = m_trajectory[m_trajectory.size() - 1] + 0.1f * glm::normalize(normal);
+
     glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutBufferObject);
     glBufferData(GL_ARRAY_BUFFER, m_replicatedCut.size() * sizeof(float) * 3, m_replicatedCut.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -322,23 +361,26 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void ReplicatedCutObject::renderReplicatedCut(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color)
+void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& color, bool isFrameMode, bool isLightEnabled)
 {
-    m_lightManager->setLightUniforms(m_defaultLightShaderProgram);
+    if (isLightEnabled)
+    {
+        m_lightManager->setLightUniforms(m_defaultLightShaderProgram);
 
-    m_defaultLightShaderProgram->use();
-    
-    // это должно быть где-то снаружи!
-    m_defaultLightShaderProgram->setVec4("material.ambient", m_material->ambient);
-    m_defaultLightShaderProgram->setVec4("material.diffuse", m_material->diffuse);
-    m_defaultLightShaderProgram->setVec4("material.specular", m_material->specular);
-    m_defaultLightShaderProgram->setFloat("material.shininess", m_material->shininess);
+        m_defaultLightShaderProgram->use();
 
-    m_defaultLightShaderProgram->setMat4("projection_matrix", projectionMatrix);
-    m_defaultLightShaderProgram->setMat4("view_matrix", viewMatrix);
+        // это должно быть где-то снаружи!
+        m_defaultLightShaderProgram->setVec4("material.ambient", m_material->ambient);
+        m_defaultLightShaderProgram->setVec4("material.diffuse", m_material->diffuse);
+        m_defaultLightShaderProgram->setVec4("material.specular", m_material->specular);
+        m_defaultLightShaderProgram->setFloat("material.shininess", m_material->shininess);
+    }
+    else
+    {
+        m_defaultShaderProgram->use();
 
-    glm::mat4 normalMatrix = glm::transpose(glm::inverse(viewMatrix));
-    m_defaultLightShaderProgram->setMat4("normal_matrix", normalMatrix);
+        m_defaultShaderProgram->setVec3("color", color);
+    }
 
     glBindVertexArray(m_vao);
 
@@ -350,8 +392,11 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::mat4& projectionMatrix,
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(1);
 
-    /*glEnable(GL_POLYGON_MODE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);*/
+    if (isFrameMode)
+    {
+        glEnable(GL_POLYGON_MODE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
 
     glDrawArrays(GL_TRIANGLES, 0, m_replicatedCut.size());
 
@@ -359,16 +404,17 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::mat4& projectionMatrix,
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
 
-    /*glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glDisable(GL_POLYGON_MODE);*/
+    if (isFrameMode)
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDisable(GL_POLYGON_MODE);
+    }
 }
 
-void ReplicatedCutObject::renderNormals(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix, const glm::vec3& color)
+void ReplicatedCutObject::renderNormals(const glm::vec3& color, bool isSmoothMode)
 {
     m_defaultShaderProgram->use();
 
-    m_defaultShaderProgram->setMat4("projection_matrix", projectionMatrix);
-    m_defaultShaderProgram->setMat4("view_matrix", viewMatrix);
     m_defaultShaderProgram->setVec3("color", color);
 
     glEnable(GL_LINE_SMOOTH);

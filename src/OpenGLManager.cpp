@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 OpenGLManager::OpenGLManager(std::string_view executablePath, int mainWindowWidth, int mainWindowHeight) :
     m_mainWindowWidth(mainWindowWidth),
@@ -26,8 +27,14 @@ OpenGLManager::~OpenGLManager()
 
 void OpenGLManager::init(GLFWwindow* window)
 {
-    m_resourceManager->loadShaders("defaultSP", "res/shaders/defaultVert.glsl", "res/shaders/defaultFrag.glsl");
-    m_resourceManager->loadShaders("defaultLightSP", "res/shaders/defaultLightVert.glsl", "res/shaders/defaultLightFrag.glsl");
+    m_resourceManager->loadShaders(
+        "defaultSP", 
+        "res/shaders/defaultVert.glsl", 
+        "res/shaders/defaultFrag.glsl");
+    m_resourceManager->loadShaders(
+        "defaultLightSP", 
+        "res/shaders/defaultLightVert.glsl", 
+        "res/shaders/defaultLightFrag.glsl");
 
     std::string globalLightFilePath = m_resourceManager->getFullFilePath("res/data/light/globalLight.txt");
     std::string pointLightsFilePath = m_resourceManager->getFullFilePath("res/data/light/pointLights.txt");
@@ -49,6 +56,13 @@ void OpenGLManager::init(GLFWwindow* window)
         float aspect = static_cast<float>(m_mainWindowWidth) / m_mainWindowHeight;
         m_projectionMatrix = glm::perspective(OpenGLConstants::fovy, aspect, OpenGLConstants::zNear, OpenGLConstants::zFar);
     }
+
+    glGenBuffers(1, &m_matricesUniformBufferObject);
+    glBindBuffer(GL_UNIFORM_BUFFER, m_matricesUniformBufferObject);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), nullptr, GL_STATIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, m_matricesUniformBufferObject);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(m_projectionMatrix));
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void OpenGLManager::display(GLFWwindow* window, double currentTime)
@@ -58,12 +72,63 @@ void OpenGLManager::display(GLFWwindow* window, double currentTime)
     glEnable(GL_DEPTH_TEST);
 
     m_viewMatrix = m_camera->getViewMatrix();
-    //m_cutObject->renderTrajectory(m_projectionMatrix, m_viewMatrix, m_trajectoryColor);
-    //m_cutObject->renderTrajectoryCuts(m_projectionMatrix, m_viewMatrix, m_cutsColor);
-    m_cutObject->renderReplicatedCut(m_projectionMatrix, m_viewMatrix, m_replicatedCutColor);
-    //m_cutObject->renderNormals(m_projectionMatrix, m_viewMatrix, m_normalsColor);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, m_matricesUniformBufferObject);
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(m_viewMatrix));
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    switch (m_displayMode)
+    {
+    case Trajectory:
+        m_cutObject->renderTrajectory(m_trajectoryColor);
+        break;
+
+    case Trajectory_and_filled_cuts:
+        m_cutObject->renderTrajectory(m_trajectoryColor);
+        m_cutObject->renderTrajectoryCuts(m_cutsColor, false);
+        break;
+
+    case Trajectory_and_frame_cuts:
+        m_cutObject->renderTrajectory(m_trajectoryColor);
+        m_cutObject->renderTrajectoryCuts(m_cutsColor, true);
+        break;
+
+    case Replicated_cut_simple_filled_surface:
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, false, true);
+        break;
+
+    case Replicated_cut_smoothing_normals_filled_surface:
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, false, true);
+        m_cutObject->renderNormals(m_normalsColor, true);
+        break;
+
+    case Replicated_cut_no_smoothing_normals_filled_surface:
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, false, true);
+        m_cutObject->renderNormals(m_normalsColor, false);
+        break;
+
+    case Replicated_cut_simple_frame_surface:
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, true, false);
+        break;
+
+    case Replicated_cut_trajectory_frame_surface:
+        m_cutObject->renderTrajectory(m_trajectoryColor);
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, true, false);
+        break;
+
+    case Replicated_cut_trajectory_and_cuts_frame_surface:
+        m_cutObject->renderTrajectory(m_trajectoryColor);
+        m_cutObject->renderTrajectoryCuts(m_cutsColor, true);
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, true, false);
+        break;
+    }
 
     glDisable(GL_DEPTH_TEST);
+}
+
+void OpenGLManager::setDisplayMode(DisplayModes displayMode)
+{
+    m_displayMode = displayMode;
 }
 
 void OpenGLManager::windowResize(int width, int height)
@@ -75,6 +140,10 @@ void OpenGLManager::windowResize(int width, int height)
     {
         float aspect = static_cast<float>(m_mainWindowWidth) / m_mainWindowHeight;
         m_projectionMatrix = glm::perspective(OpenGLConstants::fovy, aspect, OpenGLConstants::zNear, OpenGLConstants::zFar);
+
+        glBindBuffer(GL_UNIFORM_BUFFER, m_matricesUniformBufferObject);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(m_projectionMatrix));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 }
 

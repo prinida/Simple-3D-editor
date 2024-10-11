@@ -1,7 +1,11 @@
 #include "GLFWManagement.h"
 
+#include "Enums.h"
 #include "OpenGLManager.h"
 
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_glfw.h"
+#include "ImGui/imgui_impl_opengl3.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -56,6 +60,16 @@ namespace GLFW
 
         GLFWglobals::openGLManager = new OpenGLManager(executablePath, GLFWglobals::mainWindowWidth, GLFWglobals::mainWindowHeight);
         GLFWglobals::openGLManager->init(GLFWglobals::mainWindow);
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+        ImGui_ImplGlfw_InitForOpenGL(GLFWglobals::mainWindow, true);
+        ImGui_ImplOpenGL3_Init();
+
+        ImGui::StyleColorsLight();
     }
 
     void renderLoop()
@@ -63,7 +77,10 @@ namespace GLFW
         while (!glfwWindowShouldClose(GLFWglobals::mainWindow))
         {
             calcDeltaTimePerFrame();
+
             GLFWglobals::openGLManager->display(GLFWglobals::mainWindow, glfwGetTime());
+            renderMenu();
+
             glfwSwapBuffers(GLFWglobals::mainWindow);
             glfwPollEvents();
         }
@@ -72,6 +89,10 @@ namespace GLFW
     void destroy()
     {
         if (GLFWglobals::openGLManager) delete GLFWglobals::openGLManager;
+
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
 
         glfwDestroyWindow(GLFWglobals::mainWindow);
         glfwTerminate();
@@ -99,6 +120,102 @@ namespace GLFW
 
             GLFWglobals::openGLManager->mouseMovement(xoffset, yoffset);
         }
+    }
+
+    void renderMenu()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("Display mode"))
+            {
+                if (ImGui::MenuItem("Trajectory"))
+                {
+                    GLFWglobals::openGLManager->setDisplayMode(Trajectory);
+                }
+                if (ImGui::BeginMenu("Trajectory and cuts"))
+                {
+                    if (ImGui::MenuItem("Filled cuts"))
+                    {
+                        GLFWglobals::openGLManager->setDisplayMode(Trajectory_and_filled_cuts);
+                    }
+                    if (ImGui::MenuItem("Frame cuts"))
+                    {
+                        GLFWglobals::openGLManager->setDisplayMode(Trajectory_and_frame_cuts);
+                    }
+
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Replicated cut"))
+                {
+                    if (ImGui::BeginMenu("Filled surface"))
+                    {
+                        if (ImGui::MenuItem("Simple filled surface"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_simple_filled_surface);
+                        }
+                        if (ImGui::MenuItem("Filled surface with smoothing normals"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_smoothing_normals_filled_surface);
+                        }
+                        if (ImGui::MenuItem("Filled surface with no smoothing normals"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_no_smoothing_normals_filled_surface);
+                        }
+
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu("Frame surface"))
+                    {
+                        if (ImGui::MenuItem("Simple frame"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_simple_frame_surface);
+                        }
+                        if (ImGui::MenuItem("Frame with trajectory"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_trajectory_frame_surface);
+                        }
+                        if (ImGui::MenuItem("Frame with trajectory and cuts"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_trajectory_and_cuts_frame_surface);
+                        }
+
+                        ImGui::EndMenu();
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Light"))
+            {
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Material"))
+            {
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Texture"))
+            {
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Projection"))
+            {
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     void processKeysClick(GLFWwindow* window, int key, int scancode, int action, int mods)

@@ -33,6 +33,8 @@ namespace GLFW
     void renderLoop();
     void destroy();
 
+    void renderMenu();
+
     void processCursorPosition(GLFWwindow* window, double xposIn, double yposIn);
     void processKeysClick(GLFWwindow* window, int key, int scancode, int action, int mods);
     void processScroll(GLFWwindow* window, double xoffset, double yoffset);

@@ -17,12 +17,16 @@ struct PointLight
 
 uniform PointLight light;
 
-uniform mat4 projection_matrix;
-uniform mat4 view_matrix;
-uniform mat4 normal_matrix;
+layout (std140, binding = 0) uniform Matrices
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+};
 
 void main(void)
 {
+	mat4 normal_matrix = transpose(inverse(view_matrix));
+
 	vec3 viewPos = (view_matrix * vec4(position, 1.0)).xyz;
 	vec3 lightPos = (view_matrix * vec4(light.position, 1.0)).xyz;
 

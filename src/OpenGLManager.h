@@ -2,6 +2,7 @@
 #define OPENGL_MANAGER_H
 
 #include "Camera.h"
+#include "Enums.h"
 #include "LightManager.h"
 #include "ReplicatedCutObject.h"
 #include "ResourcesManager.h"
@@ -29,6 +30,8 @@ public:
     void init(GLFWwindow* window);
     void display(GLFWwindow* window, double currentTime);
 
+    void setDisplayMode(DisplayModes displayMode);
+
     void windowResize(int width, int height);
     void frontMovement(double deltaTime);
     void backMovement(double deltaTime);
@@ -47,6 +50,8 @@ private:
     glm::mat4 m_projectionMatrix = glm::mat4(1.0f);
     glm::mat4 m_viewMatrix = glm::mat4(1.0f);
 
+    GLuint m_matricesUniformBufferObject{};
+
     glm::vec3 m_trajectoryColor{ 1.0f, 0.0f, 0.0f };
     glm::vec3 m_cutsColor{ 0.0f, 0.0f, 1.0f };
     glm::vec3 m_replicatedCutColor{ 0.0f, 1.0f, 0.0f };
@@ -54,6 +59,8 @@ private:
 
     int m_mainWindowWidth = 0;
     int m_mainWindowHeight = 0;
+
+    DisplayModes m_displayMode = Replicated_cut_simple_filled_surface;
 };
 
 #endif
