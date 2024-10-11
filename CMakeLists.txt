@@ -13,6 +13,9 @@ add_executable(${PROJECT_NAME}
 	src/GLFWManagement.h
 	src/ReplicatedCutObject.h
 	src/Camera.h
+	src/LightTypes.h
+	src/MaterialTypes.h
+	src/LightManager.h
 	src/ResourcesManager.cpp
 	src/ShaderProgram.cpp
 	src/Texture.cpp
@@ -20,6 +23,7 @@ add_executable(${PROJECT_NAME}
 	src/ReplicatedCutObject.cpp
 	src/Camera.cpp
 	src/GLFWManagement.cpp
+	src/LightManager.cpp
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)

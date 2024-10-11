@@ -50,6 +50,7 @@ namespace GLFW
         glfwSetKeyCallback(GLFWglobals::mainWindow, processKeysClick);
         glfwSetScrollCallback(GLFWglobals::mainWindow, processScroll);
         glfwSetMouseButtonCallback(GLFWglobals::mainWindow, processMouseClick);
+        glfwSetWindowSizeCallback(GLFWglobals::mainWindow, processWindowResize);
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { std::exit(EXIT_FAILURE); }
 
@@ -131,6 +132,16 @@ namespace GLFW
         {
             GLFWglobals::firstMousePositionChange = true;
         }
+    }
+
+    void processWindowResize(GLFWwindow* window, int width, int height)
+    {
+        GLFWglobals::mainWindowWidth = width;
+        GLFWglobals::mainWindowHeight = height;
+
+        glViewport(0, 0, width, height);
+
+        GLFWglobals::openGLManager->windowResize(width, height);
     }
 
     void calcDeltaTimePerFrame()

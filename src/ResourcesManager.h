@@ -1,6 +1,7 @@
 #ifndef RESOURCES_MANAGER_H
 #define RESOURCES_MANAGER_H
 
+#include "MaterialTypes.h"
 #include "ShaderProgram.h"
 #include "Texture.h"
 
@@ -26,6 +27,9 @@ public:
     std::shared_ptr<Texture> loadTexture(std::string_view textureName, std::string_view texturePath);
     std::shared_ptr<Texture> getTexture(std::string_view textureName);
 
+    void loadNaturalMaterial(std::string_view materialPath);
+    std::shared_ptr<NaturalMaterial> getNaturalMaterial(std::string_view materialName);
+
     std::string getFullFilePath(std::string_view relativeFilePath) const;
 
 private:
@@ -36,6 +40,9 @@ private:
 
     typedef std::map<std::string, std::shared_ptr<Texture>> TexturesMap;
     TexturesMap m_textures;
+
+    typedef std::map<std::string, std::shared_ptr<NaturalMaterial>> NaturalMaterialsMap;
+    NaturalMaterialsMap m_naturalMaterials;
 
     std::string m_path;
 };

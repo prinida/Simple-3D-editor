@@ -13,6 +13,7 @@
 #include <string_view>
 #include <map>
 #include <memory>
+#include "MaterialTypes.h"
 
 ResourceManager::ResourceManager(std::string_view executablePath)
 {
@@ -115,6 +116,55 @@ std::shared_ptr<Texture> ResourceManager::getTexture(std::string_view textureNam
         return it->second;
 
     std::cerr << "Can't find the texture: " << textureName << std::endl;
+
+    return nullptr;
+}
+
+void ResourceManager::loadNaturalMaterial(std::string_view materialPath)
+{
+    std::ifstream f;
+
+    f.open(m_path + "/" + materialPath.data());
+
+    if (!f.is_open())
+        std::cerr << "Failed to open natural materials file!" << std::endl;
+    else
+    {
+        int size = 0;
+
+        f >> size;
+
+        NaturalMaterial material{};
+
+        std::string name;
+        glm::vec4* ambient = &material.ambient;
+        glm::vec4* diffuse = &material.diffuse;
+        glm::vec4* specular = &material.specular;
+        float* shininess = &material.shininess;
+
+        for (int i = 0; i < size; ++i)
+        {
+            f >> name;
+            f >> ambient->x >> ambient->y >> ambient->z >> ambient->w;
+            f >> diffuse->x >> diffuse->y >> diffuse->z >> diffuse->w;
+            f >> specular->x >> specular->y >> specular->z >> specular->w;
+            f >> *shininess;
+
+            m_naturalMaterials.emplace(name, std::make_shared<NaturalMaterial>(material));
+        }
+
+        f.close();
+    }
+}
+
+std::shared_ptr<NaturalMaterial> ResourceManager::getNaturalMaterial(std::string_view materialName)
+{
+    NaturalMaterialsMap::const_iterator it = m_naturalMaterials.find(materialName.data());
+
+    if (it != m_naturalMaterials.end())
+        return it->second;
+
+    std::cerr << "Can't find the material: " << materialName << std::endl;
 
     return nullptr;
 }
