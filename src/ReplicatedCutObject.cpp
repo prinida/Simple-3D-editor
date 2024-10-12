@@ -9,10 +9,9 @@
 #include <iostream>
 #include <string_view>
 
-ReplicatedCutObject::ReplicatedCutObject(std::string_view fullFilePath, ResourceManager* resourceManager, LightManager* lightManager, std::string_view material)
+ReplicatedCutObject::ReplicatedCutObject(std::string_view fullFilePath, ResourceManager* resourceManager, std::string_view material)
 {
     m_resourceManager = resourceManager;
-    m_lightManager = lightManager;
     m_defaultShaderProgram = m_resourceManager->getShaderProgram("defaultSP");
     m_defaultLightShaderProgram = m_resourceManager->getShaderProgram("defaultLightSP");
     m_material = resourceManager->getNaturalMaterial(material);
@@ -72,6 +71,11 @@ ReplicatedCutObject::~ReplicatedCutObject()
     glDeleteBuffers(1, &m_normalsBufferObject);
 }
 
+void ReplicatedCutObject::setMaterial(std::string material)
+{
+    m_material = m_resourceManager->getNaturalMaterial(material);
+}
+
 void ReplicatedCutObject::prepareToRenderTrajectory()
 {
     glBindBuffer(GL_ARRAY_BUFFER, m_trajectoryBufferObject);
@@ -85,6 +89,7 @@ void ReplicatedCutObject::renderTrajectory(const glm::vec3& color)
 
     m_defaultShaderProgram->use();
     m_defaultShaderProgram->setVec3("color", color);
+    m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
 
     glBindVertexArray(m_vao);
 
@@ -223,6 +228,7 @@ void ReplicatedCutObject::renderTrajectoryCuts(const glm::vec3& color, bool isFr
 {
     m_defaultShaderProgram->use();
     m_defaultShaderProgram->setVec3("color", color);
+    m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
 
     glBindVertexArray(m_vao);
 
@@ -365,9 +371,9 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& color, bool isFra
 {
     if (isLightEnabled)
     {
-        m_lightManager->setLightUniforms(m_defaultLightShaderProgram);
-
         m_defaultLightShaderProgram->use();
+
+        m_defaultLightShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
 
         // это должно быть где-то снаружи!
         m_defaultLightShaderProgram->setVec4("material.ambient", m_material->ambient);
@@ -378,8 +384,8 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& color, bool isFra
     else
     {
         m_defaultShaderProgram->use();
-
         m_defaultShaderProgram->setVec3("color", color);
+        m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
     }
 
     glBindVertexArray(m_vao);
@@ -416,6 +422,7 @@ void ReplicatedCutObject::renderNormals(const glm::vec3& color, bool isSmoothMod
     m_defaultShaderProgram->use();
 
     m_defaultShaderProgram->setVec3("color", color);
+    m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
 
     glEnable(GL_LINE_SMOOTH);
 

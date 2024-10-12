@@ -16,8 +16,10 @@
 class ReplicatedCutObject
 {
 public:
-    ReplicatedCutObject(std::string_view fullFilePath, ResourceManager* resourceManager, LightManager* lightManager, std::string_view material);
+    ReplicatedCutObject(std::string_view fullFilePath, ResourceManager* resourceManager, std::string_view material);
     ~ReplicatedCutObject();
+
+    void setMaterial(std::string material);
 
     void prepareToRenderTrajectory();
     void renderTrajectory(const glm::vec3& color);
@@ -35,7 +37,6 @@ private:
     void calcVectorsOrientationInTrajectory();
 
     ResourceManager* m_resourceManager = nullptr;
-    LightManager* m_lightManager = nullptr;
 
     std::vector<glm::vec2> m_cut;
     std::vector<glm::vec3> m_trajectory;

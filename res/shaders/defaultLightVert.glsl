@@ -4,18 +4,16 @@ layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 
 out vec3 vertNormal;
-out vec3 vertLightDir;
-out vec3 vertHalfVector;
+out vec3 vertLightDir[15];
+out vec3 vertHalfVector[15];
 
 struct PointLight
 {
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
-	vec3 position;
+	vec4 position;
 };
-
-uniform PointLight light;
 
 layout (std140, binding = 0) uniform Matrices
 {
@@ -23,16 +21,29 @@ layout (std140, binding = 0) uniform Matrices
 	mat4 view_matrix;
 };
 
+layout (std140, binding = 1) uniform Lights
+{
+	vec4 globalAmbient;
+	int lightsCount;
+	PointLight light[15];
+};
+
+uniform mat4 model_matrix;
+
 void main(void)
 {
-	mat4 normal_matrix = transpose(inverse(view_matrix));
-
-	vec3 viewPos = (view_matrix * vec4(position, 1.0)).xyz;
-	vec3 lightPos = (view_matrix * vec4(light.position, 1.0)).xyz;
-
-	vertLightDir = lightPos - viewPos;
+	mat4 normal_matrix = transpose(inverse(view_matrix * model_matrix));
 	vertNormal = (normal_matrix * vec4(normal, 1.0)).xyz;
-	vertHalfVector = vertLightDir - viewPos;
+
+	vec3 viewPos = (view_matrix * model_matrix * vec4(position, 1.0)).xyz;
+
+	for (int i = 0; i < lightsCount; ++i)
+	{
+		vec3 lightPos = (view_matrix * light[i].position).xyz;
+
+		vertLightDir[i] = lightPos - viewPos;
+		vertHalfVector[i] = vertLightDir[i] - viewPos;
+	}
 
 	gl_Position = projection_matrix * vec4(viewPos, 1.0);
 }

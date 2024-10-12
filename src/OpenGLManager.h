@@ -7,6 +7,7 @@
 #include "ReplicatedCutObject.h"
 #include "ResourcesManager.h"
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
@@ -32,6 +33,26 @@ public:
 
     void setDisplayMode(DisplayModes displayMode);
 
+    std::string getNaturalMaterialByIndex(int index);
+    int getNaturalMaterialSize();
+
+    void setReplicatedCutMaterial(std::string materialName);
+
+    void addPointLightSource();
+    void deletePointLightSource(int index);
+
+    int getPointLightSourceCounts();
+    std::string getPointLightSourceName(int index);
+    glm::vec3 getAmbientComponent(int index);
+    glm::vec3 getDiffuseComponent(int index);
+    glm::vec3 getSpecularComponent(int index);
+
+    void setSelectedPointLight(int index);
+    void moveSelectedPointLight(int x, int y, int z, double deltaTime);
+    void setAmbientComponent(int index, float* ambient);
+    void setDiffuseComponent(int index, float* diffuse);
+    void setSpecularComponent(int index, float* specular);
+
     void windowResize(int width, int height);
     void frontMovement(double deltaTime);
     void backMovement(double deltaTime);
@@ -44,6 +65,8 @@ private:
     ResourceManager* m_resourceManager = nullptr;
     ReplicatedCutObject* m_cutObject = nullptr;
     LightManager* m_lightManager = nullptr;
+
+    std::vector<std::string> m_naturalMaterialNames;
 
     Camera* m_camera = nullptr;
 

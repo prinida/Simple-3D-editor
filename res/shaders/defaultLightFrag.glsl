@@ -1,8 +1,8 @@
 #version 460
 
 in vec3 vertNormal;
-in vec3 vertLightDir;
-in vec3 vertHalfVector;
+in vec3 vertLightDir[15];
+in vec3 vertHalfVector[15];
 
 out vec4 fragColor;
 
@@ -11,7 +11,7 @@ struct PointLight
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
-	vec3 position;
+	vec4 position;
 };
 
 struct NaturalMaterial
@@ -22,22 +22,40 @@ struct NaturalMaterial
 	float shininess;
 };
 
-uniform PointLight light;
+layout (std140, binding = 1) uniform Lights
+{
+	vec4 globalAmbient;
+	int lightsCount;
+	PointLight light[15];
+};
+
 uniform NaturalMaterial material;
-uniform vec4 globalAmbient;
 
 void main(void)
 {
-	vec3 L = normalize(vertLightDir);
+	vec3 color = vec3(0.0, 0.0, 0.0);
+
     vec3 N = normalize(vertNormal);
-    vec3 H = normalize(vertHalfVector);
 
-    float cosTheta = dot(N,L);
-    float cosPhi = dot(H,N);
+    for (int i = 0; i < lightsCount; ++i)
+	{
+		vec3 L = normalize(vertLightDir[i]);
+		vec3 H = normalize(vertHalfVector[i]);
 
-    vec3 ambient = (((globalAmbient + light.ambient) * material.ambient).xyz);
-    vec3 diffuse = light.diffuse.xyz * material.diffuse.xyz * max(cosTheta, 0.0);
-    vec3 specular = light.specular.xyz * material.specular.xyz * pow(max(cosPhi, 0.0), material.shininess * 3.0);
+		float cosTheta = dot(N,L);
+    	float cosPhi = dot(H,N);
 
-    fragColor = vec4(ambient + diffuse + specular, 1.0);
+    	vec3 ambient = (((globalAmbient + light[i].ambient) * material.ambient).xyz);
+    	vec3 diffuse = light[i].diffuse.xyz * material.diffuse.xyz * max(cosTheta, 0.0);
+    	vec3 specular = light[i].specular.xyz * material.specular.xyz * pow(max(cosPhi, 0.0), material.shininess * 3.0);
+
+    	color += vec3(ambient + diffuse + specular);
+	}
+
+	if (lightsCount != 0)
+		color /= lightsCount;
+	else
+		color = (globalAmbient * material.ambient).xyz;
+		
+    fragColor = vec4(color, 1.0);
 }

@@ -1,5 +1,6 @@
 #include "ResourcesManager.h"
 
+#include "MaterialTypes.h"
 #include "ShaderProgram.h"
 #include "Texture.h"
 
@@ -13,7 +14,7 @@
 #include <string_view>
 #include <map>
 #include <memory>
-#include "MaterialTypes.h"
+#include <vector>
 
 ResourceManager::ResourceManager(std::string_view executablePath)
 {
@@ -167,6 +168,21 @@ std::shared_ptr<NaturalMaterial> ResourceManager::getNaturalMaterial(std::string
     std::cerr << "Can't find the material: " << materialName << std::endl;
 
     return nullptr;
+}
+
+std::vector<std::string> ResourceManager::getNaturalMaterialNames()
+{
+    int size = m_naturalMaterials.size();
+    std::vector<std::string> names(size);
+
+    int i = 0;
+    for (auto& var : m_naturalMaterials)
+    {
+        names[i] = var.first;
+        ++i;
+    }
+
+    return names;
 }
 
 std::string ResourceManager::getFullFilePath(std::string_view relativeFilePath) const

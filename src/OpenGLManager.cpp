@@ -23,6 +23,8 @@ OpenGLManager::~OpenGLManager()
     if (m_lightManager) delete m_lightManager;
     if (m_cutObject) delete m_cutObject;
     if (m_camera) delete m_camera;
+
+    glDeleteBuffers(1, &m_matricesUniformBufferObject);
 }
 
 void OpenGLManager::init(GLFWwindow* window)
@@ -39,12 +41,13 @@ void OpenGLManager::init(GLFWwindow* window)
     std::string globalLightFilePath = m_resourceManager->getFullFilePath("res/data/light/globalLight.txt");
     std::string pointLightsFilePath = m_resourceManager->getFullFilePath("res/data/light/pointLights.txt");
 
-    m_lightManager = new LightManager(globalLightFilePath, pointLightsFilePath);
+    m_lightManager = new LightManager(m_resourceManager, globalLightFilePath, pointLightsFilePath);
 
     m_resourceManager->loadNaturalMaterial("res/materials/naturalMaterials.txt");
+    m_naturalMaterialNames = m_resourceManager->getNaturalMaterialNames();
 
     std::string cutObjectFilePath = m_resourceManager->getFullFilePath("res/data/object/cutObject.txt");
-    m_cutObject = new ReplicatedCutObject(cutObjectFilePath, m_resourceManager, m_lightManager, "emerald");
+    m_cutObject = new ReplicatedCutObject(cutObjectFilePath, m_resourceManager, m_naturalMaterialNames[0]);
     m_cutObject->prepareToRenderTrajectory();
     m_cutObject->prepareToRenderTrajectoryCuts();
     m_cutObject->prepareToRenderReplicatedCut();
@@ -67,15 +70,21 @@ void OpenGLManager::init(GLFWwindow* window)
 
 void OpenGLManager::display(GLFWwindow* window, double currentTime)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glClearColor(0, 0, 0, 0);
     glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     m_viewMatrix = m_camera->getViewMatrix();
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_matricesUniformBufferObject);
     glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(m_viewMatrix));
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glStencilMask(0x00);
 
     switch (m_displayMode)
     {
@@ -123,12 +132,93 @@ void OpenGLManager::display(GLFWwindow* window, double currentTime)
         break;
     }
 
+    m_lightManager->renderPointLights();
+
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
 }
 
 void OpenGLManager::setDisplayMode(DisplayModes displayMode)
 {
     m_displayMode = displayMode;
+}
+
+std::string OpenGLManager::getNaturalMaterialByIndex(int index)
+{
+    if (index < 0 || index >= m_naturalMaterialNames.size())
+        return std::string();
+
+    return m_naturalMaterialNames[index];
+}
+
+int OpenGLManager::getNaturalMaterialSize()
+{
+    return m_naturalMaterialNames.size();
+}
+
+void OpenGLManager::setReplicatedCutMaterial(std::string materialName)
+{
+    m_cutObject->setMaterial(materialName);
+}
+
+void OpenGLManager::addPointLightSource()
+{
+    m_lightManager->addPointLightSource();
+}
+
+void OpenGLManager::deletePointLightSource(int index)
+{
+    m_lightManager->deletePointLightSource(index);
+}
+
+int OpenGLManager::getPointLightSourceCounts()
+{
+    return m_lightManager->getPointLightSourceCounts();
+}
+
+std::string OpenGLManager::getPointLightSourceName(int index)
+{
+    return m_lightManager->getPointLightSourceName(index);
+}
+
+glm::vec3 OpenGLManager::getAmbientComponent(int index)
+{
+    return m_lightManager->getAmbientComponent(index);
+}
+
+glm::vec3 OpenGLManager::getDiffuseComponent(int index)
+{
+    return m_lightManager->getDiffuseComponent(index);
+}
+
+glm::vec3 OpenGLManager::getSpecularComponent(int index)
+{
+    return m_lightManager->getSpecularComponent(index);
+}
+
+void OpenGLManager::setSelectedPointLight(int index)
+{
+    m_lightManager->setSelectedPointLight(index);
+}
+
+void OpenGLManager::moveSelectedPointLight(int x, int y, int z, double deltaTime)
+{
+    m_lightManager->setSelectedPointLightPosition(x, y, z, deltaTime);
+}
+
+void OpenGLManager::setAmbientComponent(int index, float* ambient)
+{
+    m_lightManager->setAmbientComponent(index, glm::vec3(ambient[0], ambient[1], ambient[2]));
+}
+
+void OpenGLManager::setDiffuseComponent(int index, float* diffuse)
+{
+    m_lightManager->setDiffuseComponent(index, glm::vec3(diffuse[0], diffuse[1], diffuse[2]));
+}
+
+void OpenGLManager::setSpecularComponent(int index, float* specular)
+{
+    m_lightManager->setSpecularComponent(index, glm::vec3(specular[0], specular[1], specular[2]));
 }
 
 void OpenGLManager::windowResize(int width, int height)

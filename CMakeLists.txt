@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME}
 	src/MaterialTypes.h
 	src/LightManager.h
 	src/Enums.h
+	src/Sphere.h
 
 	src/main.cpp
 	src/ResourcesManager.cpp
@@ -26,6 +27,7 @@ add_executable(${PROJECT_NAME}
 	src/Camera.cpp
 	src/GLFWManagement.cpp
 	src/LightManager.cpp
+	src/Sphere.cpp
 	
 	src/ImGui/imconfig.h
 	src/ImGui/imgui.cpp

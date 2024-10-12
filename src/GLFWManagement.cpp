@@ -193,11 +193,92 @@ namespace GLFW
 
             if (ImGui::BeginMenu("Light"))
             {
+                int size = GLFWglobals::openGLManager->getPointLightSourceCounts();
+
+                for (int i = 0; i < size; ++i)
+                {
+                    if (ImGui::BeginMenu(GLFWglobals::openGLManager->getPointLightSourceName(i).c_str()))
+                    {
+                        if (ImGui::MenuItem("Set position"))
+                        {
+                            GLFWglobals::openGLManager->setSelectedPointLight(i);
+                        }
+
+                        if (ImGui::BeginMenu("Set ambient component"))
+                        {
+                            glm::vec3 amb = GLFWglobals::openGLManager->getAmbientComponent(i);
+                            float ambient[3]{ amb.x, amb.y, amb.z };
+
+                            bool isChanged = ImGui::ColorPicker3("Ambient", ambient);
+
+                            if (isChanged)
+                                GLFWglobals::openGLManager->setAmbientComponent(i, ambient);
+
+                            ImGui::EndMenu();
+                        }
+
+                        if (ImGui::BeginMenu("Set diffuse component"))
+                        {
+                            glm::vec3 dif = GLFWglobals::openGLManager->getDiffuseComponent(i);
+                            float diffuse[3]{ dif.x, dif.y, dif.z };
+
+                            bool isChanged = ImGui::ColorPicker3("Diffuse", diffuse);
+
+                            if (isChanged)
+                                GLFWglobals::openGLManager->setDiffuseComponent(i, diffuse);
+
+                            ImGui::EndMenu();
+                        }
+
+                        if (ImGui::BeginMenu("Set specular component"))
+                        {
+                            glm::vec3 spec = GLFWglobals::openGLManager->getSpecularComponent(i);
+                            float specular[3]{ spec.x, spec.y, spec.z };
+
+                            bool isChanged = ImGui::ColorPicker3("Specular", specular);
+
+                            if (isChanged)
+                                GLFWglobals::openGLManager->setSpecularComponent(i, specular);
+
+                            ImGui::EndMenu();
+                        }
+
+                        if (ImGui::MenuItem("Delete"))
+                        {
+                            GLFWglobals::openGLManager->deletePointLightSource(i);
+                            size--;
+                        }
+
+                        ImGui::EndMenu();
+                    }
+                }
+
+                if (ImGui::MenuItem("Add point light source"))
+                {
+                    GLFWglobals::openGLManager->addPointLightSource();
+                }
+
+                if (ImGui::MenuItem("Unselect"))
+                {
+                    GLFWglobals::openGLManager->setSelectedPointLight(-1);
+                }
+
                 ImGui::EndMenu();
             }
 
             if (ImGui::BeginMenu("Material"))
             {
+                int size = GLFWglobals::openGLManager->getNaturalMaterialSize();
+
+                for (int i = 0; i < size; ++i)
+                {
+                    std::string name = GLFWglobals::openGLManager->getNaturalMaterialByIndex(i);
+
+                    if (ImGui::MenuItem(name.c_str()))
+                    {
+                        GLFWglobals::openGLManager->setReplicatedCutMaterial(name);
+                    }
+                }
                 ImGui::EndMenu();
             }
 
@@ -235,6 +316,30 @@ namespace GLFW
         else if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
         {
             GLFWglobals::openGLManager->leftMovement(GLFWglobals::deltaTime);
+        }
+        else if (key == GLFW_KEY_X && (action == GLFW_PRESS || action == GLFW_REPEAT) && mods == GLFW_MOD_SHIFT)
+        {
+            GLFWglobals::openGLManager->moveSelectedPointLight(-1, 0, 0, GLFWglobals::deltaTime);
+        }
+        else if (key == GLFW_KEY_Y && (action == GLFW_PRESS || action == GLFW_REPEAT) && mods == GLFW_MOD_SHIFT)
+        {
+            GLFWglobals::openGLManager->moveSelectedPointLight(0, -1, 0, GLFWglobals::deltaTime);
+        }
+        else if (key == GLFW_KEY_Z && (action == GLFW_PRESS || action == GLFW_REPEAT) && mods == GLFW_MOD_SHIFT)
+        {
+            GLFWglobals::openGLManager->moveSelectedPointLight(0, 0, -1, GLFWglobals::deltaTime);
+        }
+        else if (key == GLFW_KEY_X && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        {
+            GLFWglobals::openGLManager->moveSelectedPointLight(1, 0, 0, GLFWglobals::deltaTime);
+        }
+        else if (key == GLFW_KEY_Y && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        {
+            GLFWglobals::openGLManager->moveSelectedPointLight(0, 1, 0, GLFWglobals::deltaTime);
+        }
+        else if (key == GLFW_KEY_Z && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        {
+            GLFWglobals::openGLManager->moveSelectedPointLight(0, 0, 1, GLFWglobals::deltaTime);
         }
     }
 

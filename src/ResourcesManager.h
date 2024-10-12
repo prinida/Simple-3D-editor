@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 class ResourceManager
 {
@@ -29,6 +30,7 @@ public:
 
     void loadNaturalMaterial(std::string_view materialPath);
     std::shared_ptr<NaturalMaterial> getNaturalMaterial(std::string_view materialName);
+    std::vector<std::string> getNaturalMaterialNames();
 
     std::string getFullFilePath(std::string_view relativeFilePath) const;
 
