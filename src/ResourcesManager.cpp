@@ -71,6 +71,45 @@ std::shared_ptr<ShaderProgram> ResourceManager::loadShaders(std::string_view sha
     return nullptr;
 }
 
+std::shared_ptr<ShaderProgram> ResourceManager::loadShaders(std::string_view shaderName, std::string_view vertexPath, std::string_view geomPath, std::string_view fragmentPath)
+{
+    std::string vertexString = getFileString(vertexPath);
+
+    if (vertexString.empty())
+    {
+        std::cerr << "No vertex shader!" << std::endl;
+        return nullptr;
+    }
+
+    std::string geomString = getFileString(geomPath);
+
+    if (geomString.empty())
+    {
+        std::cerr << "No geometry shader!" << std::endl;
+        return nullptr;
+    }
+
+    std::string fragmentString = getFileString(fragmentPath);
+
+    if (fragmentString.empty())
+    {
+        std::cerr << "No fragment shader!" << std::endl;
+        return nullptr;
+    }
+
+    auto& newShader = m_shaderPrograms.emplace(shaderName, std::make_shared<ShaderProgram>(vertexString, geomString, fragmentString)).first->second;
+
+    if (newShader->getIsCompiled())
+        return newShader;
+
+    std::cerr << "Can't load shader program:\n"
+        << "Vertex: " << vertexPath << '\n'
+        << "Geometry: " << geomPath << '\n'
+        << "Fragment:" << fragmentPath << std::endl;
+
+    return nullptr;
+}
+
 std::shared_ptr<ShaderProgram> ResourceManager::getShaderProgram(std::string_view shaderName)
 {
     ShaderProgramsMap::const_iterator it = m_shaderPrograms.find(shaderName.data());

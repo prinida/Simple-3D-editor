@@ -23,6 +23,7 @@ public:
     ResourceManager(ResourceManager&&) = delete;
 
     std::shared_ptr<ShaderProgram> loadShaders(std::string_view shaderName, std::string_view vertexPath, std::string_view fragmentPath);
+    std::shared_ptr<ShaderProgram> loadShaders(std::string_view shaderName, std::string_view vertexPath, std::string_view geomPath, std::string_view fragmentPath);
     std::shared_ptr<ShaderProgram> getShaderProgram(std::string_view shaderName);
 
     std::shared_ptr<Texture> loadTexture(std::string_view textureName, std::string_view texturePath);

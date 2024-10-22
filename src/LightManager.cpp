@@ -168,8 +168,7 @@ void LightManager::deletePointLightSource(int index)
     if (m_pointLight.size() == 0)
         return;
 
-    if (index == m_selectedPointLightSource)
-        m_selectedPointLightSource = -1;
+    m_selectedPointLightSource = -1;
 
     m_pointLight.erase(m_pointLight.begin() + index);
 
@@ -289,5 +288,7 @@ void LightManager::updateFullLightPointsInUniformBufferObject()
 {
     int size = m_pointLight.size();
 
+    glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUniformBufferObject);
     glBufferSubData(GL_UNIFORM_BUFFER, 32, 64 * size, m_pointLight.data());
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }

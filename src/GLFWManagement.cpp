@@ -152,17 +152,25 @@ namespace GLFW
                 {
                     if (ImGui::BeginMenu("Filled surface"))
                     {
-                        if (ImGui::MenuItem("Simple filled surface"))
-                        {
-                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_simple_filled_surface);
-                        }
-                        if (ImGui::MenuItem("Filled surface with smoothing normals"))
+                        if (ImGui::MenuItem("Smoothing normals light"))
                         {
                             GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_smoothing_normals_filled_surface);
                         }
-                        if (ImGui::MenuItem("Filled surface with no smoothing normals"))
+                        if (ImGui::MenuItem("No smoothing normals light"))
                         {
                             GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_no_smoothing_normals_filled_surface);
+                        }
+                        if (ImGui::MenuItem("Smoothing normals light with normals display"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_smoothing_normals_display_filled_surface);
+                        }
+                        if (ImGui::MenuItem("No smoothing normals light with normals display"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_no_smoothing_normals_display_filled_surface);
+                        }
+                        if (ImGui::MenuItem("No light"))
+                        {
+                            GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_no_light_filled_surface);
                         }
 
                         ImGui::EndMenu();

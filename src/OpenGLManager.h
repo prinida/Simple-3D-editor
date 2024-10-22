@@ -83,7 +83,7 @@ private:
     int m_mainWindowWidth = 0;
     int m_mainWindowHeight = 0;
 
-    DisplayModes m_displayMode = Replicated_cut_simple_filled_surface;
+    DisplayModes m_displayMode = Replicated_cut_no_smoothing_normals_filled_surface;
 };
 
 #endif

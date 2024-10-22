@@ -11,6 +11,7 @@ class ShaderProgram
 {
 public:
     ShaderProgram(std::string_view vertexShader, std::string_view fragmentShader);
+    ShaderProgram(std::string_view vertexShader, std::string_view geomShader, std::string_view fragmentShader);
     ~ShaderProgram();
 
     ShaderProgram() = delete;

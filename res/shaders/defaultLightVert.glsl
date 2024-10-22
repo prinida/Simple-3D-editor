@@ -32,18 +32,16 @@ uniform mat4 model_matrix;
 
 void main(void)
 {
-	mat4 normal_matrix = transpose(inverse(view_matrix * model_matrix));
+	mat4 normal_matrix = transpose(inverse(model_matrix));
 	vertNormal = (normal_matrix * vec4(normal, 1.0)).xyz;
 
-	vec3 viewPos = (view_matrix * model_matrix * vec4(position, 1.0)).xyz;
+	vec3 mPos = (model_matrix * vec4(position, 1.0)).xyz;
 
 	for (int i = 0; i < lightsCount; ++i)
 	{
-		vec3 lightPos = (view_matrix * light[i].position).xyz;
-
-		vertLightDir[i] = lightPos - viewPos;
-		vertHalfVector[i] = vertLightDir[i] - viewPos;
+		vertLightDir[i] = light[i].position.xyz - mPos;
+		vertHalfVector[i] = vertLightDir[i] - mPos;
 	}
 
-	gl_Position = projection_matrix * vec4(viewPos, 1.0);
+	gl_Position = projection_matrix * view_matrix * vec4(mPos, 1.0);
 }

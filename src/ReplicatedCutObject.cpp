@@ -12,8 +12,11 @@
 ReplicatedCutObject::ReplicatedCutObject(std::string_view fullFilePath, ResourceManager* resourceManager, std::string_view material)
 {
     m_resourceManager = resourceManager;
+
     m_defaultShaderProgram = m_resourceManager->getShaderProgram("defaultSP");
     m_defaultLightShaderProgram = m_resourceManager->getShaderProgram("defaultLightSP");
+    m_defaultNormalsShaderProgram = m_resourceManager->getShaderProgram("defaultNormalsSP");
+
     m_material = resourceManager->getNaturalMaterial(material);
 
     std::ifstream f;
@@ -68,7 +71,7 @@ ReplicatedCutObject::~ReplicatedCutObject()
     glDeleteBuffers(1, &m_trajectoryCutsBufferObject);
     glDeleteBuffers(1, &m_replicatedCutBufferObject);
     glDeleteBuffers(1, &m_replicatedCutNormalsBufferObject);
-    glDeleteBuffers(1, &m_normalsBufferObject);
+    glDeleteBuffers(1, &m_replicatedCutSmoothedNormalsBufferObject);
 }
 
 void ReplicatedCutObject::setMaterial(std::string material)
@@ -121,17 +124,17 @@ void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
     int cutSize = m_cut.size();
     int trajectorySize = m_trajectory.size();
 
+    m_originTranslatedCut.resize(cutSize);
+
     glm::vec3 cutCenter{};
     for (int i = 0; i < cutSize; ++i)
         cutCenter += glm::vec3(m_cut[i], 0.0f);
     cutCenter /= cutSize;
 
-    // тут этого не должно быть, сделано временно (сохранять оригинальное сечение)
-    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.3f, 0.3f, 0.3f));
     glm::mat4 tran = glm::translate(glm::mat4(1.0f), -cutCenter);
     for (int i = 0; i < cutSize; ++i)
     {
-        m_cut[i] = glm::vec2(scale * tran * glm::vec4(m_cut[i], 0.0f, 1.0f));
+        m_originTranslatedCut[i] = glm::vec2(tran * glm::vec4(m_cut[i], 0.0f, 1.0f));
     }
 
     m_translatedCut.resize((cutSize + 2) * trajectorySize);
@@ -212,8 +215,14 @@ void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
 
         glm::mat3 rotate = glm::mat3(x, y, z);
 
+        float scaleParam = m_cutParameters[i];
+        glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(scaleParam));
+
         for (int j = 0; j < cutSize; ++j)
-            m_translatedCut[j + shift] = rotate * glm::vec3(m_cut[j], 0.0f) + translate;
+        {
+            glm::vec2 scaledVertex = glm::vec2(scale * glm::vec4(m_originTranslatedCut[j], 0.0f, 1.0f));
+            m_translatedCut[j + shift] = rotate * glm::vec3(scaledVertex, 0.0f) + translate;
+        }
 
         m_translatedCut[i * (cutSize + 2)] = center;
         m_translatedCut[shift + cutSize] = m_translatedCut[shift];
@@ -264,14 +273,12 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
     int cutNum = m_trajectory.size();
 
     int replicatedCutSize = (cutNum - 1) * cutSize * 2 * 3 + cutSize * 3 * 2;
-    int normalsSize = (cutNum - 1) * cutSize * 2 + 4;
 
     m_replicatedCut.resize(replicatedCutSize);
     m_replicatedCutNormals.resize(replicatedCutSize);
-    m_normals.resize(normalsSize);
+    m_replicatedCutSmoothedNormals.resize(replicatedCutSize);
 
     int repCutIndex = 0;
-    int normalsIndex = 0;
 
     for (int i = 0; i < cutNum - 1; ++i)
     {
@@ -292,35 +299,33 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
             m_replicatedCut[repCutIndex + 4] = point3;
             m_replicatedCut[repCutIndex + 5] = point4;
 
-            glm::vec3 a = point1 - point2;
-            glm::vec3 b = point3 - point2;
+            glm::vec3 normal2first = glm::cross(point1 - point2, point3 - point2);
+            glm::vec3 normal2second = glm::cross(point3 - point2, point4 - point2);
+            glm::vec3 normal3first = glm::cross(point1 - point3, point2 - point3);
+            glm::vec3 normal3second = glm::cross(point2 - point3, point4 - point3);
 
-            glm::vec3 normal = glm::cross(a, b);
+            glm::vec3 normal1 = glm::cross(point2 - point1, point3 - point1);
+            glm::vec3 normal2 = (normal2first + normal2second) / 2.0f;
+            glm::vec3 normal3 = (normal3first + normal3second) / 2.0f;
+            glm::vec3 normal4 = glm::cross(point2 - point4, point3 - point4);
 
-            m_replicatedCutNormals[repCutIndex] = normal;
-            m_replicatedCutNormals[repCutIndex + 1] = normal;
-            m_replicatedCutNormals[repCutIndex + 2] = normal;
-            m_replicatedCutNormals[repCutIndex + 3] = normal;
-            m_replicatedCutNormals[repCutIndex + 4] = normal;
-            m_replicatedCutNormals[repCutIndex + 5] = normal;
+            m_replicatedCutNormals[repCutIndex] = -normal1;
+            m_replicatedCutNormals[repCutIndex + 1] = normal2;
+            m_replicatedCutNormals[repCutIndex + 2] = -normal3;
+            m_replicatedCutNormals[repCutIndex + 3] = normal2;
+            m_replicatedCutNormals[repCutIndex + 4] = -normal3;
+            m_replicatedCutNormals[repCutIndex + 5] = normal4;
 
             repCutIndex += 6;
-
-            glm::vec3 normalStart = (point2 + point3) / 2.0f;
-            glm::vec3 normalEnd = normalStart + 0.1f * glm::normalize(normal);
-            m_normals[normalsIndex] = normalStart;
-            m_normals[normalsIndex + 1] = normalEnd;
-
-            normalsIndex += 2;
         }
     }
 
-    glm::vec3 center = m_translatedCut[0];
+    glm::vec3 center0 = m_translatedCut[0];
     glm::vec3 normal = m_trajectory[0] - m_trajectory[1];
 
     for (int i = 1; i < cutSize + 1; ++i)
     {
-        m_replicatedCut[repCutIndex] = center;
+        m_replicatedCut[repCutIndex] = center0;
         m_replicatedCut[repCutIndex + 1] = m_translatedCut[i];
         m_replicatedCut[repCutIndex + 2] = m_translatedCut[i + 1];
 
@@ -331,18 +336,16 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
         repCutIndex += 3;
     }
 
-    m_normals[normalsIndex] = m_trajectory[0];
-    m_normals[normalsIndex + 1] = m_trajectory[0] + 0.1f * glm::normalize(normal);
-    normalsIndex += 2;
-
-    center = m_translatedCut[m_translatedCut.size() - cutSize - 2];
+    glm::vec3 center1 = m_translatedCut[m_translatedCut.size() - cutSize - 2];
     normal = m_trajectory[m_trajectory.size() - 1] - m_trajectory[m_trajectory.size() - 2];
 
-    for (int i = 1; i < cutSize + 1; ++i)
+    int endCutIndex = m_translatedCut.size() - cutSize - 1;
+
+    for (int i = 0; i < cutSize; ++i)
     {
-        m_replicatedCut[repCutIndex] = center;
-        m_replicatedCut[repCutIndex + 1] = m_translatedCut[m_translatedCut.size() - i];
-        m_replicatedCut[repCutIndex + 2] = m_translatedCut[m_translatedCut.size() - i - 1];
+        m_replicatedCut[repCutIndex] = center1;
+        m_replicatedCut[repCutIndex + 1] = m_translatedCut[endCutIndex + i];
+        m_replicatedCut[repCutIndex + 2] = m_translatedCut[endCutIndex + i + 1];
 
         m_replicatedCutNormals[repCutIndex] = normal;
         m_replicatedCutNormals[repCutIndex + 1] = normal;
@@ -351,8 +354,99 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
         repCutIndex += 3;
     }
 
-    m_normals[normalsIndex] = m_trajectory[m_trajectory.size() - 1];
-    m_normals[normalsIndex + 1] = m_trajectory[m_trajectory.size() - 1] + 0.1f * glm::normalize(normal);
+    for (int i = 0; i < cutNum - 1; ++i)
+    {
+        int cutIndex = i * cutSize * 6;
+        int prevCutIndex = (i - 1) * cutSize * 6;
+        int nextCutIndex = (i + 1) * cutSize * 6;
+
+        if (i == 0)
+            prevCutIndex = 0;
+
+        for (int j = 0; j < cutSize; ++j)
+        {
+            int nextj = j + 1;
+            if (nextj == cutSize)
+                nextj = 0;
+
+            int prevj = j - 1;
+            if (prevj == -1)
+                prevj = cutSize - 1;
+
+            int rectIndex = cutIndex + j * 6;
+            int nextjRectIndex = cutIndex + nextj * 6;
+            int prevjRectIndex = cutIndex + prevj * 6;
+
+            int previrectIndex = prevCutIndex + j * 6;
+            int previnextjRectIndex = prevCutIndex + nextj * 6;
+            int previprevjRectIndex = prevCutIndex + prevj * 6;
+
+            int nextirectIndex = nextCutIndex + j * 6;
+            int nextinextjRectIndex = nextCutIndex + nextj * 6;
+            int nextiprevjRectIndex = nextCutIndex + prevj * 6;
+
+            glm::vec3 normal1_1 = glm::normalize(m_replicatedCutNormals[rectIndex]);
+            glm::vec3 normal1_2 = glm::normalize(m_replicatedCutNormals[prevjRectIndex + 1]);
+            glm::vec3 normal1_3 = glm::normalize(m_replicatedCutNormals[previrectIndex + 2]);
+            glm::vec3 normal1_4 = glm::normalize(m_replicatedCutNormals[previprevjRectIndex + 5]);
+
+            glm::vec3 normal2_1 = glm::normalize(m_replicatedCutNormals[nextjRectIndex]);
+            glm::vec3 normal2_2 = glm::normalize(m_replicatedCutNormals[rectIndex + 1]);
+            glm::vec3 normal2_3 = glm::normalize(m_replicatedCutNormals[previnextjRectIndex + 2]);
+            glm::vec3 normal2_4 = glm::normalize(m_replicatedCutNormals[previrectIndex + 5]);
+
+            glm::vec3 normal3_1 = glm::normalize(m_replicatedCutNormals[nextirectIndex]);
+            glm::vec3 normal3_2 = glm::normalize(m_replicatedCutNormals[nextiprevjRectIndex + 1]);
+            glm::vec3 normal3_3 = glm::normalize(m_replicatedCutNormals[rectIndex + 2]);
+            glm::vec3 normal3_4 = glm::normalize(m_replicatedCutNormals[prevjRectIndex + 5]);
+
+            glm::vec3 normal4_1 = glm::normalize(m_replicatedCutNormals[nextinextjRectIndex]);
+            glm::vec3 normal4_2 = glm::normalize(m_replicatedCutNormals[nextirectIndex + 1]);
+            glm::vec3 normal4_3 = glm::normalize(m_replicatedCutNormals[nextjRectIndex + 2]);
+            glm::vec3 normal4_4 = glm::normalize(m_replicatedCutNormals[rectIndex + 5]);
+
+            glm::vec3 smoothedNormal1 = (normal1_1 + normal1_2 + normal1_3 + normal1_4) / 4.0f;
+            glm::vec3 smoothedNormal2 = (normal2_1 + normal2_2 + normal2_3 + normal2_4) / 4.0f;
+            glm::vec3 smoothedNormal3 = (normal3_1 + normal3_2 + normal3_3 + normal3_4) / 4.0f;
+            glm::vec3 smoothedNormal4 = (normal4_1 + normal4_2 + normal4_3 + normal4_4) / 4.0f;
+
+            if (i == 0)
+            {
+                int startCutIndex = (cutNum - 1) * cutSize * 6;
+                int startTriangleIndex = startCutIndex + 3 * j;
+
+                glm::vec3 normal = glm::normalize(m_replicatedCutNormals[startCutIndex]);
+
+                smoothedNormal1 = (normal1_1 + normal1_2 + normal + normal) / 4.0f;
+                smoothedNormal2 = (normal2_1 + normal2_2 + normal + normal) / 4.0f;
+
+                m_replicatedCutSmoothedNormals[startTriangleIndex] = normal;
+                m_replicatedCutSmoothedNormals[startTriangleIndex + 1] = smoothedNormal1;
+                m_replicatedCutSmoothedNormals[startTriangleIndex + 2] = smoothedNormal2;
+            }
+            else if (i == cutNum - 2)
+            {
+                int endCutIndex = ((cutNum - 1) + 1.0 / 2.0) * cutSize * 6;
+                int startTriangleIndex = endCutIndex + 3 * j;
+
+                glm::vec3 normal = glm::normalize(m_replicatedCutNormals[endCutIndex]);
+
+                smoothedNormal3 = (normal + normal + normal3_3 + normal3_4) / 4.0f;
+                smoothedNormal4 = (normal + normal + normal4_3 + normal4_4) / 4.0f;
+
+                m_replicatedCutSmoothedNormals[startTriangleIndex] = normal;
+                m_replicatedCutSmoothedNormals[startTriangleIndex + 1] = smoothedNormal3;
+                m_replicatedCutSmoothedNormals[startTriangleIndex + 2] = smoothedNormal4;
+            }
+
+            m_replicatedCutSmoothedNormals[rectIndex] = smoothedNormal1;
+            m_replicatedCutSmoothedNormals[rectIndex + 1] = smoothedNormal2;
+            m_replicatedCutSmoothedNormals[rectIndex + 2] = smoothedNormal3;
+            m_replicatedCutSmoothedNormals[rectIndex + 3] = smoothedNormal2;
+            m_replicatedCutSmoothedNormals[rectIndex + 4] = smoothedNormal3;
+            m_replicatedCutSmoothedNormals[rectIndex + 5] = smoothedNormal4;
+        }
+    }
 
     glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutBufferObject);
     glBufferData(GL_ARRAY_BUFFER, m_replicatedCut.size() * sizeof(float) * 3, m_replicatedCut.data(), GL_STATIC_DRAW);
@@ -362,15 +456,20 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
     glBufferData(GL_ARRAY_BUFFER, m_replicatedCutNormals.size() * sizeof(float) * 3, m_replicatedCutNormals.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_normalsBufferObject);
-    glBufferData(GL_ARRAY_BUFFER, m_normals.size() * sizeof(float) * 3, m_normals.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutSmoothedNormalsBufferObject);
+    glBufferData(GL_ARRAY_BUFFER, m_replicatedCutSmoothedNormals.size() * sizeof(float) * 3, m_replicatedCutSmoothedNormals.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& color, bool isFrameMode, bool isLightEnabled)
+void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& replicatedCutColor, const glm::vec3& normalsColor, bool isFrameMode, bool isLightEnabled, bool isNormalsMode, bool isSmoothNormalsMode)
 {
     if (isLightEnabled)
     {
+        if (isNormalsMode && isSmoothNormalsMode)
+            renderNormals(normalsColor, true);
+        else if(isNormalsMode && !isSmoothNormalsMode)
+            renderNormals(normalsColor, false);
+
         m_defaultLightShaderProgram->use();
 
         m_defaultLightShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
@@ -380,23 +479,38 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& color, bool isFra
         m_defaultLightShaderProgram->setVec4("material.diffuse", m_material->diffuse);
         m_defaultLightShaderProgram->setVec4("material.specular", m_material->specular);
         m_defaultLightShaderProgram->setFloat("material.shininess", m_material->shininess);
+
+        glBindVertexArray(m_vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutBufferObject);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(0);
+
+        if (isSmoothNormalsMode)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutSmoothedNormalsBufferObject);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(1);
+        }
+        else
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutNormalsBufferObject);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(1);
+        }
     }
     else
     {
+        glBindVertexArray(m_vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutBufferObject);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(0);
+
         m_defaultShaderProgram->use();
-        m_defaultShaderProgram->setVec3("color", color);
+        m_defaultShaderProgram->setVec3("color", replicatedCutColor);
         m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
     }
-
-    glBindVertexArray(m_vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutBufferObject);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutNormalsBufferObject);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(1);
 
     if (isFrameMode)
     {
@@ -419,20 +533,33 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& color, bool isFra
 
 void ReplicatedCutObject::renderNormals(const glm::vec3& color, bool isSmoothMode)
 {
-    m_defaultShaderProgram->use();
-
-    m_defaultShaderProgram->setVec3("color", color);
-    m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
-
     glEnable(GL_LINE_SMOOTH);
+
+    m_defaultNormalsShaderProgram->use();
+
+    m_defaultNormalsShaderProgram->setVec3("color", color);
+    m_defaultNormalsShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
 
     glBindVertexArray(m_vao);
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_normalsBufferObject);
+    glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutBufferObject);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
-    glDrawArrays(GL_LINES, 0, m_normals.size());
+    if (isSmoothMode)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutSmoothedNormalsBufferObject);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(1);
+    }
+    else
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutNormalsBufferObject);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(1);
+    }
+
+    glDrawArrays(GL_TRIANGLES, 0, m_replicatedCut.size());
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -448,7 +575,7 @@ void ReplicatedCutObject::generateBuffers()
     glCreateBuffers(1, &m_trajectoryCutsBufferObject);
     glCreateBuffers(1, &m_replicatedCutBufferObject);
     glCreateBuffers(1, &m_replicatedCutNormalsBufferObject);
-    glCreateBuffers(1, &m_normalsBufferObject);
+    glCreateBuffers(1, &m_replicatedCutSmoothedNormalsBufferObject);
 }
 
 void ReplicatedCutObject::calcVectorsOrientationInTrajectory()

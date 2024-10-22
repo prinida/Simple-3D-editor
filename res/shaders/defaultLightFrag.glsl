@@ -33,7 +33,7 @@ uniform NaturalMaterial material;
 
 void main(void)
 {
-	vec3 color = vec3(0.0, 0.0, 0.0);
+	vec3 color = (globalAmbient * material.ambient).xyz;
 
     vec3 N = normalize(vertNormal);
 
@@ -45,17 +45,12 @@ void main(void)
 		float cosTheta = dot(N,L);
     	float cosPhi = dot(H,N);
 
-    	vec3 ambient = (((globalAmbient + light[i].ambient) * material.ambient).xyz);
+    	vec3 ambient = ((light[i].ambient * material.ambient).xyz);
     	vec3 diffuse = light[i].diffuse.xyz * material.diffuse.xyz * max(cosTheta, 0.0);
     	vec3 specular = light[i].specular.xyz * material.specular.xyz * pow(max(cosPhi, 0.0), material.shininess * 3.0);
 
     	color += vec3(ambient + diffuse + specular);
 	}
-
-	if (lightsCount != 0)
-		color /= lightsCount;
-	else
-		color = (globalAmbient * material.ambient).xyz;
 		
     fragColor = vec4(color, 1.0);
 }

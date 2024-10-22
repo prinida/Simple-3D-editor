@@ -37,6 +37,11 @@ void OpenGLManager::init(GLFWwindow* window)
         "defaultLightSP", 
         "res/shaders/defaultLightVert.glsl", 
         "res/shaders/defaultLightFrag.glsl");
+    m_resourceManager->loadShaders(
+        "defaultNormalsSP",
+        "res/shaders/defaultNormalsVert.glsl",
+        "res/shaders/defaultNormalsGeom.glsl",
+        "res/shaders/defaultFrag.glsl");
 
     std::string globalLightFilePath = m_resourceManager->getFullFilePath("res/data/light/globalLight.txt");
     std::string pointLightsFilePath = m_resourceManager->getFullFilePath("res/data/light/pointLights.txt");
@@ -102,33 +107,39 @@ void OpenGLManager::display(GLFWwindow* window, double currentTime)
         m_cutObject->renderTrajectoryCuts(m_cutsColor, true);
         break;
 
-    case Replicated_cut_simple_filled_surface:
-        m_cutObject->renderReplicatedCut(m_replicatedCutColor, false, true);
-        break;
-
     case Replicated_cut_smoothing_normals_filled_surface:
-        m_cutObject->renderReplicatedCut(m_replicatedCutColor, false, true);
-        m_cutObject->renderNormals(m_normalsColor, true);
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor, false, true, false, true);
         break;
 
     case Replicated_cut_no_smoothing_normals_filled_surface:
-        m_cutObject->renderReplicatedCut(m_replicatedCutColor, false, true);
-        m_cutObject->renderNormals(m_normalsColor, false);
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor, false, true, false, false);
+        break;
+
+    case Replicated_cut_smoothing_normals_display_filled_surface:
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor, false, true, true, true);
+        break;
+
+    case Replicated_cut_no_smoothing_normals_display_filled_surface:
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor, false, true, true, false);
+        break;
+
+    case Replicated_cut_no_light_filled_surface:
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor, false, false, false, false);
         break;
 
     case Replicated_cut_simple_frame_surface:
-        m_cutObject->renderReplicatedCut(m_replicatedCutColor, true, false);
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor,  true, false, false, false);
         break;
 
     case Replicated_cut_trajectory_frame_surface:
         m_cutObject->renderTrajectory(m_trajectoryColor);
-        m_cutObject->renderReplicatedCut(m_replicatedCutColor, true, false);
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor, true, false, false, false);
         break;
 
     case Replicated_cut_trajectory_and_cuts_frame_surface:
         m_cutObject->renderTrajectory(m_trajectoryColor);
         m_cutObject->renderTrajectoryCuts(m_cutsColor, true);
-        m_cutObject->renderReplicatedCut(m_replicatedCutColor, true, false);
+        m_cutObject->renderReplicatedCut(m_replicatedCutColor, m_normalsColor, true, false, false, false);
         break;
     }
 
