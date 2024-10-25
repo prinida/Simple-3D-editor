@@ -9,15 +9,17 @@
 #include <iostream>
 #include <string_view>
 
-ReplicatedCutObject::ReplicatedCutObject(std::string_view fullFilePath, ResourceManager* resourceManager, std::string_view material)
+ReplicatedCutObject::ReplicatedCutObject(std::string_view fullFilePath, ResourceManager* resourceManager, std::string_view material, std::string_view texture)
 {
     m_resourceManager = resourceManager;
 
     m_defaultShaderProgram = m_resourceManager->getShaderProgram("defaultSP");
+    m_defaultTextureShaderProgram = m_resourceManager->getShaderProgram("defaultTextureSP");
     m_defaultLightShaderProgram = m_resourceManager->getShaderProgram("defaultLightSP");
     m_defaultNormalsShaderProgram = m_resourceManager->getShaderProgram("defaultNormalsSP");
 
     m_material = resourceManager->getNaturalMaterial(material);
+    m_texture = resourceManager->getTexture(texture);
 
     std::ifstream f;
     f.open(fullFilePath.data(), std::ios::in);
@@ -72,11 +74,19 @@ ReplicatedCutObject::~ReplicatedCutObject()
     glDeleteBuffers(1, &m_replicatedCutBufferObject);
     glDeleteBuffers(1, &m_replicatedCutNormalsBufferObject);
     glDeleteBuffers(1, &m_replicatedCutSmoothedNormalsBufferObject);
+    glDeleteBuffers(1, &m_replicatedCutTextureBufferObject);
 }
 
 void ReplicatedCutObject::setMaterial(std::string material)
 {
     m_material = m_resourceManager->getNaturalMaterial(material);
+    m_isMaterialMode = true;
+}
+
+void ReplicatedCutObject::setTexture(std::string texture)
+{
+    m_texture = m_resourceManager->getTexture(texture);
+    m_isMaterialMode = false;
 }
 
 void ReplicatedCutObject::prepareToRenderTrajectory()
@@ -277,11 +287,18 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
     m_replicatedCut.resize(replicatedCutSize);
     m_replicatedCutNormals.resize(replicatedCutSize);
     m_replicatedCutSmoothedNormals.resize(replicatedCutSize);
+    m_replicatedCutTextureCoords.resize(replicatedCutSize);
 
     int repCutIndex = 0;
 
     for (int i = 0; i < cutNum - 1; ++i)
     {
+        float x1 = ((cutNum - 1 + i) % (cutNum - 1)) / static_cast<float>(cutNum - 1);
+        float x2 = ((cutNum - 1 + i + 1) % (cutNum - 1)) / static_cast<float>(cutNum - 1);
+
+        if (i == cutNum - 2)
+            x2 = 1.0f;
+
         for (int j = 1; j < pointsInCutNum - 1; ++j)
         {
             int currentCutIndex = i * pointsInCutNum + j;
@@ -298,6 +315,24 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
             m_replicatedCut[repCutIndex + 3] = point2;
             m_replicatedCut[repCutIndex + 4] = point3;
             m_replicatedCut[repCutIndex + 5] = point4;
+
+            float y1 = ((cutSize + j - 1) % cutSize) / static_cast<float>(cutSize);
+            float y2 = ((cutSize + j) % cutSize) / static_cast<float>(cutSize);
+
+            if (j == pointsInCutNum - 2)
+                y2 = 1.0f;
+
+            glm::vec2 texCoord1(x1, y1);
+            glm::vec2 texCoord2(x1, y2);
+            glm::vec2 texCoord3(x2, y1);
+            glm::vec2 texCoord4(x2, y2);
+
+            m_replicatedCutTextureCoords[repCutIndex] = texCoord1;
+            m_replicatedCutTextureCoords[repCutIndex + 1] = texCoord2;
+            m_replicatedCutTextureCoords[repCutIndex + 2] = texCoord3;
+            m_replicatedCutTextureCoords[repCutIndex + 3] = texCoord2;
+            m_replicatedCutTextureCoords[repCutIndex + 4] = texCoord3;
+            m_replicatedCutTextureCoords[repCutIndex + 5] = texCoord4;
 
             glm::vec3 normal2first = glm::cross(point1 - point2, point3 - point2);
             glm::vec3 normal2second = glm::cross(point3 - point2, point4 - point2);
@@ -320,6 +355,19 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
         }
     }
 
+    float maxLength = 0;
+    for (int i = 0; i < cutSize; ++i)
+    {
+        float length = glm::length(m_originTranslatedCut[i]);
+
+        if (length > maxLength)
+            maxLength = length;
+    }
+
+    m_originTranslatedNormalizedCut.resize(cutSize);
+    for (int i = 0; i < cutSize; ++i)
+        m_originTranslatedNormalizedCut[i] = m_originTranslatedCut[i] * 0.5f / maxLength;
+
     glm::vec3 center0 = m_translatedCut[0];
     glm::vec3 normal = m_trajectory[0] - m_trajectory[1];
 
@@ -328,6 +376,12 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
         m_replicatedCut[repCutIndex] = center0;
         m_replicatedCut[repCutIndex + 1] = m_translatedCut[i];
         m_replicatedCut[repCutIndex + 2] = m_translatedCut[i + 1];
+
+        glm::vec2 translateVec(0.5, 0.5);
+
+        m_replicatedCutTextureCoords[repCutIndex] = glm::vec2(0, 0) + translateVec;
+        m_replicatedCutTextureCoords[repCutIndex + 1] = m_originTranslatedNormalizedCut[i - 1] + translateVec;
+        m_replicatedCutTextureCoords[repCutIndex + 2] = m_originTranslatedNormalizedCut[i == cutSize ? 0 : i] + translateVec;
 
         m_replicatedCutNormals[repCutIndex] = normal;
         m_replicatedCutNormals[repCutIndex + 1] = normal;
@@ -346,6 +400,12 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
         m_replicatedCut[repCutIndex] = center1;
         m_replicatedCut[repCutIndex + 1] = m_translatedCut[endCutIndex + i];
         m_replicatedCut[repCutIndex + 2] = m_translatedCut[endCutIndex + i + 1];
+
+        glm::vec2 translateVec(0.5, 0.5);
+
+        m_replicatedCutTextureCoords[repCutIndex] = glm::vec2(0, 0) + translateVec;
+        m_replicatedCutTextureCoords[repCutIndex + 1] = m_originTranslatedNormalizedCut[i] + translateVec;
+        m_replicatedCutTextureCoords[repCutIndex + 2] = m_originTranslatedNormalizedCut[i == cutSize - 1 ? 0 : i + 1] + translateVec;
 
         m_replicatedCutNormals[repCutIndex] = normal;
         m_replicatedCutNormals[repCutIndex + 1] = normal;
@@ -459,6 +519,10 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
     glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutSmoothedNormalsBufferObject);
     glBufferData(GL_ARRAY_BUFFER, m_replicatedCutSmoothedNormals.size() * sizeof(float) * 3, m_replicatedCutSmoothedNormals.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutTextureBufferObject);
+    glBufferData(GL_ARRAY_BUFFER, m_replicatedCutTextureCoords.size() * sizeof(float) * 2, m_replicatedCutTextureCoords.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& replicatedCutColor, const glm::vec3& normalsColor, bool isFrameMode, bool isLightEnabled, bool isNormalsMode, bool isSmoothNormalsMode)
@@ -467,7 +531,7 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& replicatedCutColo
     {
         if (isNormalsMode && isSmoothNormalsMode)
             renderNormals(normalsColor, true);
-        else if(isNormalsMode && !isSmoothNormalsMode)
+        else if (isNormalsMode && !isSmoothNormalsMode)
             renderNormals(normalsColor, false);
 
         m_defaultLightShaderProgram->use();
@@ -507,9 +571,25 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& replicatedCutColo
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
 
-        m_defaultShaderProgram->use();
-        m_defaultShaderProgram->setVec3("color", replicatedCutColor);
-        m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+        if (!m_isMaterialMode)
+        {
+            m_defaultTextureShaderProgram->use();
+
+            glBindBuffer(GL_ARRAY_BUFFER, m_replicatedCutTextureBufferObject);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(1);
+
+            glBindTexture(GL_TEXTURE_2D, m_texture->getID());
+            glActiveTexture(GL_TEXTURE2);
+
+            m_defaultTextureShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+        }
+        else
+        {
+            m_defaultShaderProgram->use();
+            m_defaultShaderProgram->setVec3("color", replicatedCutColor);
+            m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+        }
     }
 
     if (isFrameMode)
@@ -576,6 +656,7 @@ void ReplicatedCutObject::generateBuffers()
     glCreateBuffers(1, &m_replicatedCutBufferObject);
     glCreateBuffers(1, &m_replicatedCutNormalsBufferObject);
     glCreateBuffers(1, &m_replicatedCutSmoothedNormalsBufferObject);
+    glCreateBuffers(1, &m_replicatedCutTextureBufferObject);
 }
 
 void ReplicatedCutObject::calcVectorsOrientationInTrajectory()

@@ -34,6 +34,10 @@ void OpenGLManager::init(GLFWwindow* window)
         "res/shaders/defaultVert.glsl", 
         "res/shaders/defaultFrag.glsl");
     m_resourceManager->loadShaders(
+        "defaultTextureSP",
+        "res/shaders/defaultTextureVert.glsl",
+        "res/shaders/defaultTextureFrag.glsl");
+    m_resourceManager->loadShaders(
         "defaultLightSP", 
         "res/shaders/defaultLightVert.glsl", 
         "res/shaders/defaultLightFrag.glsl");
@@ -51,8 +55,11 @@ void OpenGLManager::init(GLFWwindow* window)
     m_resourceManager->loadNaturalMaterial("res/materials/naturalMaterials.txt");
     m_naturalMaterialNames = m_resourceManager->getNaturalMaterialNames();
 
+    m_resourceManager->loadTextures("res/textures/");
+    m_texturesNames = m_resourceManager->getTexturesNames();
+
     std::string cutObjectFilePath = m_resourceManager->getFullFilePath("res/data/object/cutObject.txt");
-    m_cutObject = new ReplicatedCutObject(cutObjectFilePath, m_resourceManager, m_naturalMaterialNames[0]);
+    m_cutObject = new ReplicatedCutObject(cutObjectFilePath, m_resourceManager, m_naturalMaterialNames[0], m_texturesNames[0]);
     m_cutObject->prepareToRenderTrajectory();
     m_cutObject->prepareToRenderTrajectoryCuts();
     m_cutObject->prepareToRenderReplicatedCut();
@@ -154,22 +161,24 @@ void OpenGLManager::setDisplayMode(DisplayModes displayMode)
     m_displayMode = displayMode;
 }
 
-std::string OpenGLManager::getNaturalMaterialByIndex(int index)
+const std::vector<std::string>& OpenGLManager::getNaturalMaterialsNames()
 {
-    if (index < 0 || index >= m_naturalMaterialNames.size())
-        return std::string();
-
-    return m_naturalMaterialNames[index];
+    return m_naturalMaterialNames;
 }
 
-int OpenGLManager::getNaturalMaterialSize()
+const std::vector<std::string>& OpenGLManager::getTexturesNames()
 {
-    return m_naturalMaterialNames.size();
+    return m_texturesNames;
 }
 
 void OpenGLManager::setReplicatedCutMaterial(std::string materialName)
 {
     m_cutObject->setMaterial(materialName);
+}
+
+void OpenGLManager::setReplicatedCutTexture(std::string textureName)
+{
+    m_cutObject->setTexture(textureName);
 }
 
 void OpenGLManager::addPointLightSource()

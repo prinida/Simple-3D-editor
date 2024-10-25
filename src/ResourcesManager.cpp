@@ -15,6 +15,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <filesystem>
 
 ResourceManager::ResourceManager(std::string_view executablePath)
 {
@@ -122,6 +123,22 @@ std::shared_ptr<ShaderProgram> ResourceManager::getShaderProgram(std::string_vie
     return nullptr;
 }
 
+void ResourceManager::loadTextures(std::string_view texturesPath)
+{
+    std::string fullTexturesPath = m_path + "/" + texturesPath.data();
+    std::filesystem::directory_iterator texturesDirectory(fullTexturesPath);
+
+    for (auto& file : texturesDirectory)
+    {
+        auto& filePath = file.path();
+
+        std::string path = texturesPath.data() + filePath.filename().string();
+        std::string name = filePath.stem().string();
+
+        loadTexture(name, path);
+    }
+}
+
 std::shared_ptr<Texture> ResourceManager::loadTexture(std::string_view textureName, std::string_view texturePath)
 {
     int nrChannels = 0, width = 0, height = 0;
@@ -158,6 +175,11 @@ std::shared_ptr<Texture> ResourceManager::getTexture(std::string_view textureNam
     std::cerr << "Can't find the texture: " << textureName << std::endl;
 
     return nullptr;
+}
+
+std::vector<std::string> ResourceManager::getTexturesNames()
+{
+    return getNamesFromMap(m_textures);
 }
 
 void ResourceManager::loadNaturalMaterial(std::string_view materialPath)
@@ -211,17 +233,7 @@ std::shared_ptr<NaturalMaterial> ResourceManager::getNaturalMaterial(std::string
 
 std::vector<std::string> ResourceManager::getNaturalMaterialNames()
 {
-    int size = m_naturalMaterials.size();
-    std::vector<std::string> names(size);
-
-    int i = 0;
-    for (auto& var : m_naturalMaterials)
-    {
-        names[i] = var.first;
-        ++i;
-    }
-
-    return names;
+    return getNamesFromMap(m_naturalMaterials);
 }
 
 std::string ResourceManager::getFullFilePath(std::string_view relativeFilePath) const

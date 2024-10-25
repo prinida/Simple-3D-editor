@@ -276,15 +276,14 @@ namespace GLFW
 
             if (ImGui::BeginMenu("Material"))
             {
-                int size = GLFWglobals::openGLManager->getNaturalMaterialSize();
+                auto& materialsNames = GLFWglobals::openGLManager->getNaturalMaterialsNames();
+                int size = materialsNames.size();
 
                 for (int i = 0; i < size; ++i)
                 {
-                    std::string name = GLFWglobals::openGLManager->getNaturalMaterialByIndex(i);
-
-                    if (ImGui::MenuItem(name.c_str()))
+                    if (ImGui::MenuItem(materialsNames[i].c_str()))
                     {
-                        GLFWglobals::openGLManager->setReplicatedCutMaterial(name);
+                        GLFWglobals::openGLManager->setReplicatedCutMaterial(materialsNames[i]);
                     }
                 }
                 ImGui::EndMenu();
@@ -292,6 +291,16 @@ namespace GLFW
 
             if (ImGui::BeginMenu("Texture"))
             {
+                auto& texturesNames = GLFWglobals::openGLManager->getTexturesNames();
+                int size = texturesNames.size();
+
+                for (int i = 0; i < size; ++i)
+                {
+                    if (ImGui::MenuItem(texturesNames[i].c_str()))
+                    {
+                        GLFWglobals::openGLManager->setReplicatedCutTexture(texturesNames[i]);
+                    }
+                }
                 ImGui::EndMenu();
             }
 

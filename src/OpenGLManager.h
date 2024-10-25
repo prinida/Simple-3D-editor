@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 
 #include <string_view>
+#include <vector>
 
 namespace OpenGLConstants
 {
@@ -33,10 +34,11 @@ public:
 
     void setDisplayMode(DisplayModes displayMode);
 
-    std::string getNaturalMaterialByIndex(int index);
-    int getNaturalMaterialSize();
+    const std::vector<std::string>& getNaturalMaterialsNames();
+    const std::vector<std::string>& getTexturesNames();
 
     void setReplicatedCutMaterial(std::string materialName);
+    void setReplicatedCutTexture(std::string textureName);
 
     void addPointLightSource();
     void deletePointLightSource(int index);
@@ -67,6 +69,7 @@ private:
     LightManager* m_lightManager = nullptr;
 
     std::vector<std::string> m_naturalMaterialNames;
+    std::vector<std::string> m_texturesNames;
 
     Camera* m_camera = nullptr;
 
