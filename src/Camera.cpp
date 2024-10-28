@@ -33,6 +33,11 @@ Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float u
     updateCameraVectors();
 }
 
+void Camera::setPosition(glm::vec3 newPosition)
+{
+    m_position = newPosition;
+}
+
 glm::mat4 Camera::getViewMatrix() const
 {
     return glm::lookAt(m_position, m_position + m_front, m_up);

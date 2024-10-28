@@ -176,6 +176,20 @@ void LightManager::deletePointLightSource(int index)
     updateFullLightPointsInUniformBufferObject();
 }
 
+void LightManager::enableGlobalAmbient()
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUniformBufferObject);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, 16, glm::value_ptr(m_globalAmbient.ambient));
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void LightManager::disableGlobalAmbient()
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUniformBufferObject);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, 16, glm::value_ptr(glm::vec4(0.0f)));
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
 int LightManager::getPointLightSourceCounts()
 {
     return m_pointLight.size();

@@ -69,7 +69,15 @@ void OpenGLManager::init(GLFWwindow* window)
     if (m_mainWindowWidth != 0 && m_mainWindowHeight != 0)
     {
         float aspect = static_cast<float>(m_mainWindowWidth) / m_mainWindowHeight;
-        m_projectionMatrix = glm::perspective(OpenGLConstants::fovy, aspect, OpenGLConstants::zNear, OpenGLConstants::zFar);
+        m_perspectiveMatrix = glm::perspective(OpenGLConstants::fovy, aspect, OpenGLConstants::zNear, OpenGLConstants::zFar);
+        m_orthographicMatrix = glm::ortho(
+            OpenGLConstants::orthoLeft, 
+            OpenGLConstants::orthoRight, 
+            OpenGLConstants::orthoBottom, 
+            OpenGLConstants::orthoTop, 
+            OpenGLConstants::orthozNear, 
+            OpenGLConstants::zFar);
+        m_projectionMatrix = m_isPerspective ? m_perspectiveMatrix : m_orthographicMatrix;
     }
 
     glGenBuffers(1, &m_matricesUniformBufferObject);
@@ -161,6 +169,26 @@ void OpenGLManager::setDisplayMode(DisplayModes displayMode)
     m_displayMode = displayMode;
 }
 
+void OpenGLManager::setProjectionMode(bool isPerspective)
+{
+    if (m_isPerspective != isPerspective)
+    {
+        m_isPerspective = isPerspective;
+
+        m_projectionMatrix = m_isPerspective ? m_perspectiveMatrix : m_orthographicMatrix;
+
+        glBindBuffer(GL_UNIFORM_BUFFER, m_matricesUniformBufferObject);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(m_projectionMatrix));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+}
+
+void OpenGLManager::switchGlobalAmbientLight()
+{
+    m_isGlobalAmbient ? m_lightManager->disableGlobalAmbient() : m_lightManager->enableGlobalAmbient();
+    m_isGlobalAmbient = !m_isGlobalAmbient;
+}
+
 const std::vector<std::string>& OpenGLManager::getNaturalMaterialsNames()
 {
     return m_naturalMaterialNames;
@@ -249,7 +277,16 @@ void OpenGLManager::windowResize(int width, int height)
     if (m_mainWindowWidth != 0 && m_mainWindowHeight != 0)
     {
         float aspect = static_cast<float>(m_mainWindowWidth) / m_mainWindowHeight;
-        m_projectionMatrix = glm::perspective(OpenGLConstants::fovy, aspect, OpenGLConstants::zNear, OpenGLConstants::zFar);
+        m_perspectiveMatrix = glm::perspective(OpenGLConstants::fovy, aspect, OpenGLConstants::zNear, OpenGLConstants::zFar);
+        m_orthographicMatrix = glm::ortho(
+            OpenGLConstants::orthoLeft,
+            OpenGLConstants::orthoRight,
+            OpenGLConstants::orthoBottom,
+            OpenGLConstants::orthoTop,
+            OpenGLConstants::orthozNear,
+            OpenGLConstants::zFar);
+
+        m_projectionMatrix = m_isPerspective ? m_perspectiveMatrix : m_orthographicMatrix;
 
         glBindBuffer(GL_UNIFORM_BUFFER, m_matricesUniformBufferObject);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(m_projectionMatrix));
@@ -259,12 +296,14 @@ void OpenGLManager::windowResize(int width, int height)
 
 void OpenGLManager::frontMovement(double deltaTime)
 {
-    m_camera->processKeyboard(FORWARD, deltaTime);
+    if (m_isPerspective)
+        m_camera->processKeyboard(FORWARD, deltaTime);
 }
 
 void OpenGLManager::backMovement(double deltaTime)
 {
-    m_camera->processKeyboard(BACKWARD, deltaTime);
+    if (m_isPerspective)
+        m_camera->processKeyboard(BACKWARD, deltaTime);
 }
 
 void OpenGLManager::leftMovement(double deltaTime)

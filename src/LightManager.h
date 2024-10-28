@@ -22,6 +22,9 @@ public:
     void addPointLightSource();
     void deletePointLightSource(int index);
 
+    void enableGlobalAmbient();
+    void disableGlobalAmbient();
+
     int getPointLightSourceCounts();
     std::string getPointLightSourceName(int index);
     glm::vec3 getAmbientComponent(int index);

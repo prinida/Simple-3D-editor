@@ -20,7 +20,14 @@ namespace OpenGLConstants
     inline constexpr float zNear = 0.1f;
     inline constexpr float zFar = 300.0f;
 
-    inline constexpr glm::vec3 startCameraPosition(0.0f, 0.0f, 1.0f);
+    inline constexpr float orthoLeft = -5.0f;
+    inline constexpr float orthoRight = 5.0f;
+    inline constexpr float orthoBottom = -5.0f;
+    inline constexpr float orthoTop = 5.0f;
+    inline constexpr float orthozNear = -5.0f;
+    inline constexpr float orthozFar = 5.0f;
+
+    inline constexpr glm::vec3 startCameraPosition(0.0f, 0.0f, 2.0f);
 }
 
 class OpenGLManager
@@ -33,6 +40,10 @@ public:
     void display(GLFWwindow* window, double currentTime);
 
     void setDisplayMode(DisplayModes displayMode);
+
+    void setProjectionMode(bool isPerspective);
+
+    void switchGlobalAmbientLight();
 
     const std::vector<std::string>& getNaturalMaterialsNames();
     const std::vector<std::string>& getTexturesNames();
@@ -74,7 +85,11 @@ private:
     Camera* m_camera = nullptr;
 
     glm::mat4 m_projectionMatrix = glm::mat4(1.0f);
+    glm::mat4 m_perspectiveMatrix = glm::mat4(1.0f);
+    glm::mat4 m_orthographicMatrix = glm::mat4(1.0f);
     glm::mat4 m_viewMatrix = glm::mat4(1.0f);
+
+    bool m_isPerspective = true;
 
     GLuint m_matricesUniformBufferObject{};
 
@@ -87,6 +102,8 @@ private:
     int m_mainWindowHeight = 0;
 
     DisplayModes m_displayMode = Replicated_cut_no_smoothing_normals_filled_surface;
+
+    bool m_isGlobalAmbient = true;
 };
 
 #endif

@@ -22,6 +22,8 @@ public:
     void setMaterial(std::string material);
     void setTexture(std::string texture);
 
+    void setScale(float scale);
+
     void prepareToRenderTrajectory();
     void renderTrajectory(const glm::vec3& color);
 
@@ -68,6 +70,8 @@ private:
     bool m_isMaterialMode = true;
     std::shared_ptr<NaturalMaterial> m_material = nullptr;
     std::shared_ptr<Texture> m_texture = nullptr;
+
+    glm::mat4 m_scaleMatrix = glm::mat4(1.0f);
 };
 
 #endif

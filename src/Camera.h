@@ -33,6 +33,8 @@ public:
         float pitch = DefaultCamera::pitch);
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
 
+    void setPosition(glm::vec3 newPosition);
+
     glm::mat4 getViewMatrix() const;
     void processKeyboard(CameraMovement direction, float deltaTime);
     void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);

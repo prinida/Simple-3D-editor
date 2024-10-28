@@ -89,6 +89,11 @@ void ReplicatedCutObject::setTexture(std::string texture)
     m_isMaterialMode = false;
 }
 
+void ReplicatedCutObject::setScale(float scale)
+{
+    m_scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scale, scale, scale));
+}
+
 void ReplicatedCutObject::prepareToRenderTrajectory()
 {
     glBindBuffer(GL_ARRAY_BUFFER, m_trajectoryBufferObject);
@@ -102,7 +107,7 @@ void ReplicatedCutObject::renderTrajectory(const glm::vec3& color)
 
     m_defaultShaderProgram->use();
     m_defaultShaderProgram->setVec3("color", color);
-    m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+    m_defaultShaderProgram->setMat4("model_matrix", m_scaleMatrix);
 
     glBindVertexArray(m_vao);
 
@@ -150,6 +155,7 @@ void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
     m_translatedCut.resize((cutSize + 2) * trajectorySize);
 
     glm::vec3 y{};
+    glm::mat3 rotate{};
 
     for (int i = 0, shift = 1; i < trajectorySize && trajectorySize >= 3; ++i, shift += cutSize + 2)
     {
@@ -167,17 +173,27 @@ void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
             glm::vec3 a = p2 - p1;
             glm::vec3 b = p3 - p2;
 
-            z = glm::normalize(a);
-            y = glm::normalize(glm::cross(a, b));
-            x = glm::normalize(glm::cross(z, y));
+            if (std::abs(1.0 - std::abs(glm::dot(glm::normalize(a), glm::normalize(b))) <= 1e-6))
+            {
+                z = glm::normalize(a);
+                y = glm::vec3(0.0f, 1.0f, 0.0f);
+                x = glm::normalize(glm::cross(z, y));
+                y = glm::normalize(glm::cross(x, z));
+            }
+            else
+            {
+                z = glm::normalize(a);
+                y = glm::normalize(glm::cross(a, b));
+                x = glm::normalize(glm::cross(z, y));
 
-            glm::vec3 nextX = glm::normalize(-a) + glm::normalize(b);
-            if (m_isChangeVectorOrientation[i + 1]) nextX = -nextX;
+                glm::vec3 nextX = glm::normalize(-a) + glm::normalize(b);
+                if (m_isChangeVectorOrientation[i + 1]) nextX = -nextX;
 
-            float angle1 = glm::acos(glm::dot(x, nextX));
-            float angle2 = glm::acos(glm::dot(-x, nextX));
+                float angle1 = glm::acos(glm::dot(x, nextX));
+                float angle2 = glm::acos(glm::dot(-x, nextX));
 
-            if (angle2 < angle1) x = -x;
+                if (angle2 < angle1) x = -x;
+            }
 
             center = p1;
             translate = p1;
@@ -191,16 +207,19 @@ void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
             glm::vec3 a = p2 - p1;
             glm::vec3 b = p3 - p2;
 
-            z = glm::normalize(b);
-            x = glm::normalize(glm::cross(z, y));
+            if (!(std::abs(1.0 - std::abs(glm::dot(glm::normalize(a), glm::normalize(b))) <= 1e-6)))
+            {
+                z = glm::normalize(b);
+                x = glm::normalize(glm::cross(z, y));
 
-            glm::vec3 prevX = glm::normalize(-a) + glm::normalize(b);
-            if (m_isChangeVectorOrientation[i - 1]) prevX = -prevX;
+                glm::vec3 prevX = glm::normalize(-a) + glm::normalize(b);
+                if (m_isChangeVectorOrientation[i - 1]) prevX = -prevX;
 
-            float angle1 = glm::acos(glm::dot(x, prevX));
-            float angle2 = glm::acos(glm::dot(-x, prevX));
+                float angle1 = glm::acos(glm::dot(x, prevX));
+                float angle2 = glm::acos(glm::dot(-x, prevX));
 
-            if (angle2 < angle1) x = -x;
+                if (angle2 < angle1) x = -x;
+            }
 
             center = p3;
             translate = p3 - m_trajectory[0];
@@ -214,16 +233,20 @@ void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
             glm::vec3 a = glm::normalize(p1 - p2);
             glm::vec3 b = glm::normalize(p3 - p2);
 
-            x = glm::normalize(a + b);
-            z = glm::normalize(glm::cross(x, y));
+            if (!(std::abs(1.0 - std::abs(glm::dot(glm::normalize(a), glm::normalize(b))) <= 1e-6)))
+            {
+                x = glm::normalize(a + b);
+                z = glm::normalize(glm::cross(x, y));
 
-            if (m_isChangeVectorOrientation[i]) x = -x;
+                if (m_isChangeVectorOrientation[i]) x = -x;
+            }
 
             center = p2;
             translate = p2 - m_trajectory[0];
         }
 
-        glm::mat3 rotate = glm::mat3(x, y, z);
+        if (glm::length(x) > 1e-6 && glm::length(y) > 1e-6 && glm::length(z) > 1e-6)
+            rotate = glm::mat3(x, y, z);
 
         float scaleParam = m_cutParameters[i];
         glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(scaleParam));
@@ -247,7 +270,7 @@ void ReplicatedCutObject::renderTrajectoryCuts(const glm::vec3& color, bool isFr
 {
     m_defaultShaderProgram->use();
     m_defaultShaderProgram->setVec3("color", color);
-    m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+    m_defaultShaderProgram->setMat4("model_matrix", m_scaleMatrix);
 
     glBindVertexArray(m_vao);
 
@@ -343,6 +366,19 @@ void ReplicatedCutObject::prepareToRenderReplicatedCut()
             glm::vec3 normal2 = (normal2first + normal2second) / 2.0f;
             glm::vec3 normal3 = (normal3first + normal3second) / 2.0f;
             glm::vec3 normal4 = glm::cross(point2 - point4, point3 - point4);
+
+            glm::vec3 trjPoint = m_trajectory[i];
+            glm::vec3 outVec = trjPoint - point1;
+
+            float dot = glm::dot(glm::normalize(outVec), glm::normalize(normal1));
+
+            if (dot < 0)
+            {
+                normal1 = -normal1;
+                normal2 = -normal2;
+                normal3 = -normal3;
+                normal4 = -normal4;
+            }
 
             m_replicatedCutNormals[repCutIndex] = -normal1;
             m_replicatedCutNormals[repCutIndex + 1] = normal2;
@@ -536,7 +572,7 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& replicatedCutColo
 
         m_defaultLightShaderProgram->use();
 
-        m_defaultLightShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+        m_defaultLightShaderProgram->setMat4("model_matrix", m_scaleMatrix);
 
         // это должно быть где-то снаружи!
         m_defaultLightShaderProgram->setVec4("material.ambient", m_material->ambient);
@@ -582,13 +618,13 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& replicatedCutColo
             glBindTexture(GL_TEXTURE_2D, m_texture->getID());
             glActiveTexture(GL_TEXTURE2);
 
-            m_defaultTextureShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+            m_defaultTextureShaderProgram->setMat4("model_matrix", m_scaleMatrix);
         }
         else
         {
             m_defaultShaderProgram->use();
             m_defaultShaderProgram->setVec3("color", replicatedCutColor);
-            m_defaultShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+            m_defaultShaderProgram->setMat4("model_matrix", m_scaleMatrix);
         }
     }
 
@@ -618,7 +654,7 @@ void ReplicatedCutObject::renderNormals(const glm::vec3& color, bool isSmoothMod
     m_defaultNormalsShaderProgram->use();
 
     m_defaultNormalsShaderProgram->setVec3("color", color);
-    m_defaultNormalsShaderProgram->setMat4("model_matrix", glm::mat4(1.0f));
+    m_defaultNormalsShaderProgram->setMat4("model_matrix", m_scaleMatrix);
 
     glBindVertexArray(m_vao);
 

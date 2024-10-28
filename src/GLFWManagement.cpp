@@ -168,7 +168,7 @@ namespace GLFW
                         {
                             GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_no_smoothing_normals_display_filled_surface);
                         }
-                        if (ImGui::MenuItem("No light"))
+                        if (ImGui::MenuItem("No light model"))
                         {
                             GLFWglobals::openGLManager->setDisplayMode(Replicated_cut_no_light_filled_surface);
                         }
@@ -271,6 +271,11 @@ namespace GLFW
                     GLFWglobals::openGLManager->setSelectedPointLight(-1);
                 }
 
+                if (ImGui::MenuItem("Switch global ambient light"))
+                {
+                    GLFWglobals::openGLManager->switchGlobalAmbientLight();
+                }
+
                 ImGui::EndMenu();
             }
 
@@ -306,6 +311,15 @@ namespace GLFW
 
             if (ImGui::BeginMenu("Projection"))
             {
+                if (ImGui::MenuItem("Perspective"))
+                {
+                    GLFWglobals::openGLManager->setProjectionMode(true);
+                }
+                if (ImGui::MenuItem("Orthographic"))
+                {
+                    GLFWglobals::openGLManager->setProjectionMode(false);
+                }
+
                 ImGui::EndMenu();
             }
 
