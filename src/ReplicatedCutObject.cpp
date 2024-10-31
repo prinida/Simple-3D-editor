@@ -126,14 +126,6 @@ void ReplicatedCutObject::renderTrajectory(const glm::vec3& color)
 
 void ReplicatedCutObject::prepareToRenderTrajectoryCuts()
 {
-    // сделать каскадный вызов функций?
-    // сделать обработку когда коллиниарны линии, когда траектория идет вдоль оси z
-    // сделать обработку когда передана одна точка, две точки
-    // посмотреть что будет если задавать точки траектории в разных плоскостях
-    // посмотреть что будет если крутить траекторию в разные плоскости (не только z = 0)
-    // что делать, когда сечения пересекаются из за своих размеров и маленького расстояния между точками траектории
-
-    // учесть то, что будет если product будет нулем
     calcVectorsOrientationInTrajectory();
 
     int cutSize = m_cut.size();
@@ -574,7 +566,6 @@ void ReplicatedCutObject::renderReplicatedCut(const glm::vec3& replicatedCutColo
 
         m_defaultLightShaderProgram->setMat4("model_matrix", m_scaleMatrix);
 
-        // это должно быть где-то снаружи!
         m_defaultLightShaderProgram->setVec4("material.ambient", m_material->ambient);
         m_defaultLightShaderProgram->setVec4("material.diffuse", m_material->diffuse);
         m_defaultLightShaderProgram->setVec4("material.specular", m_material->specular);

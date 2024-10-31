@@ -2,6 +2,8 @@
 
 #include <string>
 
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+
 int main(int argc, char** argv)
 {
     std::string mainWinTitle = "Simple 3D editor";
